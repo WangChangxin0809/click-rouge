@@ -1,7 +1,7 @@
 # Click Rouge 开发计划
 
 > 最后更新：2026-06-10
-> 状态：Phase 1 进行中
+> 状态：Phase 4 进行中（Boss 已合入，奖励系统审查中）
 
 ---
 
@@ -41,45 +41,38 @@
 
 ---
 
-## Phase 2: 敌人与战斗
+## Phase 2: 敌人与战斗 ✅
 
-**目标**: 敌人出现 → 点击击杀 → 金币掉落 → 击中特效
-
-- [ ] `src/entities/enemy.js` — 敌人实体逻辑
-- [ ] `src/data/enemy-definitions.js` — 敌人类型数据表
-- [ ] `src/systems/spawn-system.js` — 敌人生成 + 波次管理
-- [ ] `src/systems/combat-system.js` — 点击伤害计算（含暴击）
-- [ ] `src/systems/economy-system.js` — 金币管理
-- [ ] `src/rendering/enemy-renderer.js` — 敌人绘制
-- [ ] `src/rendering/fx-renderer.js` — 粒子系统（击中火花）
-- [ ] `src/rendering/screen-shake.js` — 屏幕震动
-- [ ] `src/audio/audio-manager.js` — Web Audio 管理器
-- [ ] 验证：敌人出现，点击伤害，死亡掉落金币
+- [x] `src/entities/enemy.js` — 敌人实体逻辑（创建/更新/伤害，纯函数）
+- [x] `src/data/enemy-definitions.js` — 5 种敌人类型数据表
+- [x] `src/systems/spawn-system.js` — 敌人生成 + 波次管理（加权随机，波次门槛）
+- [x] `src/systems/combat-system.js` — 点击伤害计算（最近目标，暴击判定）
+- [x] `src/systems/economy-system.js` — 金币变化检测
+- [x] `src/rendering/enemy-renderer.js` — 敌人绘制（身体/眼睛/血条/受击闪烁）
+- [x] `src/rendering/fx-renderer.js` — 粒子系统（击打/死亡/暴击爆发，对象池）
+- [x] `src/rendering/screen-shake.js` — 屏幕震动（衰减正弦波）
+- [x] `src/audio/audio-manager.js` — Web Audio 程序化音效
+- [ ] 验证：浏览器打开 index.html，点击击杀敌人，查看特效和音效
 
 ---
 
-## Phase 3: 玩家受伤 + HUD
+## Phase 3: 玩家受伤 + HUD ✅
 
-**目标**: 敌人超时伤害玩家 → HP 条 → 游戏结束
-
-- [ ] `src/ui/ui-manager.js` — UI 面板管理
-- [ ] `src/ui/start-screen.js` — 开始界面
-- [ ] `src/ui/hud.js` — HUD（HP/金币/波次）
-- [ ] `src/ui/game-over-screen.js` — 结束界面 + 统计
-- [ ] `src/ui/damage-numbers.js` — 浮动伤害数字
-- [ ] `src/systems/difficulty-system.js` — 难度曲线
-- [ ] 验证：敌人超时扣血，HP 归零游戏结束，可重开
+- [x] `src/systems/difficulty-system.js` — 分段线性难度曲线（1.0x→5.0x，7 分钟封顶）
+- [x] `src/ui/damage-numbers.js` — CSS 动画浮动伤害数字（普通/暴击/金币/Miss）
+- [x] `main.js` 玩家死亡检测 — HP≤0 触发 game over + 屏幕震动
+- [x] HUD（HP/金币/波次/计时）已在 index.html + main.js 中实现
+- [ ] 验证：浏览器试玩，验证难度曲线和死亡流程
 
 ---
 
 ## Phase 4: Boss 系统
 
-**目标**: 周期性 Boss → 独特行为 → 奖励选择
-
-- [ ] `src/entities/boss.js` — Boss 实体逻辑
-- [ ] `src/data/boss-definitions.js` — Boss 类型数据表
-- [ ] `src/ui/reward-panel.js` — N 选 1 奖励面板
-- [ ] `src/systems/reward-system.js` — 奖励生成逻辑
+- [x] `src/entities/boss.js` — 3 种 Boss 行为模式（charge/summon/zigzag）
+- [x] `src/data/boss-definitions.js` — 3 种 Boss 类型 + tier 分级
+- [x] spawn-system 集成 — Boss 定时生成，难度缩放，事件路由
+- [ ] `src/ui/reward-panel.js` — N 选 1 奖励面板（PR #5 审查中）
+- [ ] `src/systems/reward-system.js` — 奖励生成逻辑（PR #5 审查中）
 - [ ] 验证：Boss 出现→击杀→选奖励→继续游戏
 
 ---
