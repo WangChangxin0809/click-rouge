@@ -11,11 +11,13 @@ import { STATE } from './core/game-state.js';
 import { events } from './core/event-bus.js';
 import { CanvasRenderer, DESIGN_WIDTH, DESIGN_HEIGHT } from './rendering/canvas-renderer.js';
 import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
+import { updateDifficulty } from './systems/difficulty-system.js';
 import { updateCombatSystem } from './systems/combat-system.js';
 import { initEconomySystem, updateEconomySystem } from './systems/economy-system.js';
 import { updateParticles, burstHit, burstDeath, burstCrit } from './rendering/fx-renderer.js';
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
+import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -67,7 +69,20 @@ function update(dt) {
 
     STATE.elapsedTime += dt;
 
+    // Update difficulty before systems that consume it (spawn, etc.)
+    updateDifficulty(dt);
+
     updateSpawnSystem(dt);
+
+    // Player death detection — check after spawn/combat may deal damage
+    if (STATE.player.hp <= 0) {
+        STATE.player.hp = 0;
+        STATE.gameStatus = 'gameOver';
+        gameLoop.stop();
+        events.emit('game:triggerGameOver');
+        return;
+    }
+
     updateCombatSystem();
     updateEconomySystem(dt);
     updateParticles(dt);
@@ -244,9 +259,10 @@ btnRestart.addEventListener('click', startGame);
 // EventBus listeners (game-level)
 // ---------------------------------------------------------------------------
 
-// Combat → particles + audio + screen shake
+// Combat → particles + audio + screen shake + damage numbers
 events.on('enemy:hit', (payload) => {
     burstHit(payload.position.x, payload.position.y);
+    showDamageNumber(payload.position.x, payload.position.y, payload.damage, payload.isCrit);
     if (payload.isCrit) {
         burstCrit(payload.position.x, payload.position.y);
         playCrit();
@@ -259,8 +275,19 @@ events.on('enemy:hit', (payload) => {
 
 events.on('enemy:died', (payload) => {
     burstDeath(payload.enemy.x, payload.enemy.y, payload.enemy.color);
+    showGoldNumber(payload.enemy.x, payload.enemy.y, payload.enemy.gold);
     playDeath();
     triggerShake(8, 0.2);
+});
+
+// Click miss feedback — when player clicks on empty space
+events.on('click:miss', (payload) => {
+    showMissText(payload.x, payload.y);
+});
+
+// Player damage feedback — screen shake on hit
+events.on('player:damaged', (_payload) => {
+    triggerShake(6, 0.15);
 });
 
 // Listen for game-over trigger from gameplay systems
