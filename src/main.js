@@ -12,7 +12,7 @@ import { events } from './core/event-bus.js';
 import { CanvasRenderer, DESIGN_WIDTH, DESIGN_HEIGHT } from './rendering/canvas-renderer.js';
 import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
 import { updateCombatSystem } from './systems/combat-system.js';
-import { updateEconomySystem } from './systems/economy-system.js';
+import { initEconomySystem, updateEconomySystem } from './systems/economy-system.js';
 import { updateParticles, burstHit, burstDeath, burstCrit } from './rendering/fx-renderer.js';
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
@@ -191,6 +191,7 @@ function startGame() {
     STATE.clickQueue = [];
 
     initSpawnSystem();
+    initEconomySystem();
     initAudio();
 
     // Swap screens

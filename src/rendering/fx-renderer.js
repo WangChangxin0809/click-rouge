@@ -28,6 +28,7 @@
 
 import { ObjectPool } from '../core/object-pool.js';
 import { STATE } from '../core/game-state.js';
+import { rng } from '../core/random.js';
 
 // ---------------------------------------------------------------------------
 // Particle pool
@@ -99,15 +100,15 @@ export function createParticle(x, y, config) {
         p.x = x;
         p.y = y;
 
-        const angle = Math.random() * Math.PI * 2;
-        const speed = speedMin + Math.random() * (speedMax - speedMin);
+        const angle = rng.nextFloat(0, Math.PI * 2);
+        const speed = rng.nextFloat(speedMin, speedMax);
         p.vx = Math.cos(angle) * speed;
         p.vy = Math.sin(angle) * speed;
 
         p.maxLife = life;
         p.life    = life;
         p.color   = color;
-        p.size    = sizeMin + Math.random() * (sizeMax - sizeMin);
+        p.size    = rng.nextFloat(sizeMin, sizeMax);
         p.active  = true;
 
         STATE.particles.push(p);
@@ -182,7 +183,7 @@ export function renderParticles(ctx, particles) {
  */
 export function burstHit(x, y) {
     createParticle(x, y, {
-        count: 10 + Math.floor(Math.random() * 6),
+        count: rng.nextInt(10, 15),
         speed: [70, 200],
         life:  0.25,
         color: '#ffdd44',
@@ -201,7 +202,7 @@ export function burstHit(x, y) {
  */
 export function burstDeath(x, y, color) {
     createParticle(x, y, {
-        count: 20 + Math.floor(Math.random() * 11),
+        count: rng.nextInt(20, 30),
         speed: [80, 280],
         life:  0.55,
         color: color || '#ff4444',
@@ -217,7 +218,7 @@ export function burstDeath(x, y, color) {
  */
 export function burstCrit(x, y) {
     createParticle(x, y, {
-        count: 25 + Math.floor(Math.random() * 11),
+        count: rng.nextInt(25, 35),
         speed: [100, 320],
         life:  0.45,
         color: '#ff8800',

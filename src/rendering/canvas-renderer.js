@@ -32,14 +32,10 @@ import { renderParticles } from './fx-renderer.js';
 import { getShakeOffset } from './screen-shake.js';
 
 // ---------------------------------------------------------------------------
-// Design resolution constants
+// Design resolution constants (re-exported from core/constants.js)
 // ---------------------------------------------------------------------------
 
-/** Fixed design width in logical pixels. All draw coordinates are relative to this. */
-export const DESIGN_WIDTH = 1920;
-
-/** Fixed design height in logical pixels. All draw coordinates are relative to this. */
-export const DESIGN_HEIGHT = 1080;
+export { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
 
 // ---------------------------------------------------------------------------
 // CanvasRenderer

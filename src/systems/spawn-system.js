@@ -97,10 +97,17 @@ export function initSpawnSystem() {
 export function updateSpawnSystem(dt) {
     // --- Step 1: Update enemies and remove dead/expired ones ---
     for (let i = STATE.enemies.length - 1; i >= 0; i--) {
-        const result = updateEnemy(STATE.enemies[i], dt);
+        const enemy = STATE.enemies[i];
+        const result = updateEnemy(enemy, dt);
         if (result !== null) {
-            // Enemy lifetime expired — deal timeout damage to player
+            // Enemy lifetime expired — emit player damage event and deal timeout damage
+            events.emit('player:damaged', { damage: result.damage, source: 'enemy_timeout', enemy });
             STATE.player.hp -= result.damage;
+            STATE.enemies.splice(i, 1);
+            continue;
+        }
+        // Remove enemies killed by combat system (hp <= 0) or otherwise marked dead
+        if (!enemy.alive || enemy.hp <= 0) {
             STATE.enemies.splice(i, 1);
         }
     }

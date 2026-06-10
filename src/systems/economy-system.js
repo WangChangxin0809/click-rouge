@@ -31,6 +31,25 @@ let _lastGold = null;
  *
  * @param {number} _dt - Delta time (unused in current placeholder, reserved for future)
  */
+/**
+ * Reset the economy system's internal tracker.
+ *
+ * Must be called at the start of every new game run (after STATE.reset())
+ * so that the first-frame gold value is correctly seeded and subsequent
+ * deltas are accurate.
+ */
+export function initEconomySystem() {
+    _lastGold = null;
+}
+
+/**
+ * Per-frame update.
+ *
+ * Compares current gold to the last known value and emits 'gold:changed'
+ * with the new value and delta when a change is detected.
+ *
+ * @param {number} _dt - Delta time (unused in current placeholder, reserved for future)
+ */
 export function updateEconomySystem(_dt) {
     const currentGold = STATE.player.gold;
 

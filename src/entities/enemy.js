@@ -22,7 +22,7 @@
  *   if (result.killed) { STATE.player.gold += e.gold; e.alive = false; }
  */
 
-import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../rendering/canvas-renderer.js';
+import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
 import { rng } from '../core/random.js';
 
 // ---------------------------------------------------------------------------
