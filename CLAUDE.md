@@ -20,10 +20,6 @@
 - **Language**: JavaScript (ES Modules)
 - **Target**: Single-page web game (独立 HTML+CSS+JS)
 
-## Engine Version Reference
-
-@docs/engine-reference/[engine]/VERSION.md
-
 ## Project Structure
 
 @.claude/docs/directory-structure.md
