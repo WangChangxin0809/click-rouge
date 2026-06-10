@@ -25,6 +25,7 @@ import { events } from '../core/event-bus.js';
 import { rng } from '../core/random.js';
 import { ENEMY_TYPES } from '../data/enemy-definitions.js';
 import { createEnemy, updateEnemy } from '../entities/enemy.js';
+import { getDifficulty } from './difficulty-system.js';
 
 // ---------------------------------------------------------------------------
 // Tuning constants — all numeric values exposed for designer adjustment
@@ -124,9 +125,10 @@ export function updateSpawnSystem(dt) {
     }
 
     // --- Step 3: Spawn timer ---
+    const diff = getDifficulty();
     const interval = Math.max(
         SPAWN_INTERVAL_MIN,
-        SPAWN_INTERVAL_INITIAL - STATE.elapsedTime * SPAWN_INTERVAL_DECAY
+        (SPAWN_INTERVAL_INITIAL - STATE.elapsedTime * SPAWN_INTERVAL_DECAY) / diff.spawnRateMultiplier
     );
 
     _spawnTimer += dt;
@@ -144,6 +146,10 @@ export function updateSpawnSystem(dt) {
 
     // Create and register the enemy
     const enemy = createEnemy(typeId, ENEMY_TYPES);
+    enemy.hp *= diff.enemyHpMultiplier;
+    enemy.maxHp = enemy.hp;
+    enemy.speed *= diff.enemySpeedMultiplier;
+    enemy.damage *= diff.enemyDamageMultiplier;
     STATE.enemies.push(enemy);
     events.emit('enemy:spawned', enemy);
 }
