@@ -20,6 +20,11 @@ import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.j
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
 import { generateRewards, applyReward } from './systems/reward-system.js';
 import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
+import { updateSkillBar, setSkillSlots } from './ui/skill-bar.js';
+import { updateEquipmentPanel } from './ui/equipment-panel.js';
+import { initSkillSystem, updateSkillSystem, activateSkill } from './systems/skill-system.js';
+import { updateAllFollowers } from './entities/follower.js';
+import { updateProjectiles, clearProjectiles } from './entities/projectile.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -86,6 +91,9 @@ function update(dt) {
     }
 
     updateCombatSystem();
+    updateSkillSystem(dt);
+    updateAllFollowers(dt, STATE.enemies);
+    updateProjectiles(dt);
     updateEconomySystem(dt);
     updateParticles(dt);
     updateShake(dt);
@@ -129,6 +137,12 @@ function updateHudDom() {
     const min = Math.floor(totalSec / 60);
     const sec = totalSec % 60;
     timeValue.textContent = `${min}:${String(sec).padStart(2, '0')}`;
+
+    // Skill bar cooldowns
+    updateSkillBar();
+
+    // Equipment panel
+    updateEquipmentPanel();
 }
 
 // ---------------------------------------------------------------------------
@@ -212,6 +226,8 @@ function startGame() {
 
     initSpawnSystem();
     initEconomySystem();
+    initSkillSystem();
+    clearProjectiles();
     initAudio();
 
     // Swap screens
@@ -295,6 +311,11 @@ events.on('player:damaged', (_payload) => {
     triggerShake(6, 0.15);
 });
 
+// Skill activation from keyboard hotkeys
+events.on('skill:activate', (payload) => {
+    activateSkill(payload.slot);
+});
+
 // Listen for game-over trigger from gameplay systems
 events.on('game:triggerGameOver', () => {
     endGame();
@@ -317,6 +338,12 @@ events.on('boss:died', (payload) => {
     const rewards = generateRewards(payload.tier);
     showRewardPanel(rewards, (reward) => {
         applyReward(reward);
+
+        // Refresh skill bar if a skill reward was picked
+        if (STATE.player.activeSkills && STATE.player.activeSkills.length > 0) {
+            setSkillSlots(STATE.player.activeSkills);
+        }
+
         STATE.gameStatus = 'playing';
     });
 });

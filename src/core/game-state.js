@@ -69,7 +69,13 @@ const INITIAL_STATE = {
             armor: null,
             accessory: null,
         },
+
+        /** @type {number} Extra damage on next click (consumed by combat system) */
+        poisonBladeDamage: 0,
     },
+
+    /** @type {Object[]} Active skill effects with timers (berserk, freeze, gold_rush) */
+    activeEffects: [],
 
     /** @type {Object[]} Active enemy entities on the field */
     enemies: [],

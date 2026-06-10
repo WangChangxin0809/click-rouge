@@ -226,6 +226,7 @@
             -webkit-backdrop-filter: blur(6px);
             border-radius: 12px;
             padding: 10px 18px;
+            pointer-events: auto;
         }
 
         .skill-slot {
@@ -235,11 +236,58 @@
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-size: 12px;
             color: rgba(255, 255, 255, 0.4);
-            transition: border-color 0.2s, background 0.2s;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            pointer-events: auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .skill-slot:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .skill-slot:focus-visible {
+            outline: 2px solid #f0c040;
+            outline-offset: 2px;
+        }
+
+        /* Skill slot — filled state */
+        .skill-slot-filled {
+            border-color: rgba(78, 204, 163, 0.6);
+            background: rgba(78, 204, 163, 0.12);
+            box-shadow: 0 0 12px rgba(78, 204, 163, 0.15);
+        }
+
+        /* Skill slot — empty state */
+        .skill-slot-empty {
+            border-style: dashed;
+            opacity: 0.5;
+        }
+
+        .skill-slot .skill-icon {
+            font-size: 22px;
+            line-height: 1;
+            z-index: 2;
+            position: relative;
+        }
+
+        .skill-slot .skill-name {
+            font-size: 9px;
+            color: #b0b0c0;
+            z-index: 2;
+            position: relative;
+            margin-top: 1px;
+            max-width: 48px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .skill-slot .key-hint {
@@ -247,10 +295,100 @@
             bottom: -18px;
             font-size: 11px;
             color: rgba(255, 255, 255, 0.35);
+            z-index: 5;
         }
 
         .skill-slot[data-key] {
             position: relative;
+        }
+
+        /* Cooldown overlay — fills from top to bottom */
+        .skill-cooldown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 0%;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            z-index: 3;
+            transition: height 0.1s linear;
+            pointer-events: none;
+            display: none;
+        }
+
+        .skill-slot-filled .skill-cooldown-overlay {
+            /* Visible only when cooldownFraction > 0, set via JS */
+        }
+
+        /* === Equipment Panel (right side of HUD) === */
+        .equipment-panel {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 10px;
+            padding: 8px 12px;
+            min-width: 160px;
+            pointer-events: none;
+        }
+
+        .equipment-panel-title {
+            font-size: 11px;
+            color: #8888a0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 2px;
+        }
+
+        .equip-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 6px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            font-size: 12px;
+            min-height: 28px;
+            transition: background 0.2s;
+        }
+
+        .equip-row-empty {
+            color: rgba(255, 255, 255, 0.3);
+            font-style: italic;
+        }
+
+        .equip-row-filled {
+            color: #e0e0e0;
+            background: rgba(78, 204, 163, 0.1);
+            border: 1px solid rgba(78, 204, 163, 0.2);
+        }
+
+        .equip-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .equip-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: bold;
+        }
+
+        .equip-stats {
+            font-size: 10px;
+            color: #f0c040;
+            white-space: nowrap;
         }
 
         /* === Modal Layer (z-index: 100) === */
@@ -499,6 +637,14 @@
         }
 
         /* === Responsive === */
+        /* Reduced motion: disable cooldown transition animation */
+        @media (prefers-reduced-motion: reduce) {
+            .skill-cooldown-overlay {
+                transition: none;
+            }
+        }
+
+        /* === Responsive === */
         @media (max-width: 480px) {
             .hud-top {
                 font-size: 13px;
@@ -508,6 +654,23 @@
             .skill-slot {
                 width: 46px;
                 height: 46px;
+            }
+            .skill-slot .skill-icon {
+                font-size: 18px;
+            }
+            .skill-slot .skill-name {
+                font-size: 8px;
+                max-width: 38px;
+            }
+            .equipment-panel {
+                top: 60px;
+                right: 4px;
+                min-width: 130px;
+                padding: 6px 8px;
+                font-size: 11px;
+            }
+            .equipment-panel-title {
+                font-size: 10px;
             }
             .modal-card {
                 min-width: auto;
@@ -558,10 +721,27 @@
 
         <!-- Skill bar -->
         <div class="skill-bar">
-            <div class="skill-slot" data-key="1"><span class="key-hint">1</span></div>
-            <div class="skill-slot" data-key="2"><span class="key-hint">2</span></div>
-            <div class="skill-slot" data-key="3"><span class="key-hint">3</span></div>
-            <div class="skill-slot" data-key="4"><span class="key-hint">4</span></div>
+            <div class="skill-slot skill-slot-empty" data-key="1" tabindex="0" role="button" aria-label="空技能槽">
+                <div class="skill-cooldown-overlay"></div>
+                <span class="key-hint">1</span>
+            </div>
+            <div class="skill-slot skill-slot-empty" data-key="2" tabindex="0" role="button" aria-label="空技能槽">
+                <div class="skill-cooldown-overlay"></div>
+                <span class="key-hint">2</span>
+            </div>
+            <div class="skill-slot skill-slot-empty" data-key="3" tabindex="0" role="button" aria-label="空技能槽">
+                <div class="skill-cooldown-overlay"></div>
+                <span class="key-hint">3</span>
+            </div>
+            <div class="skill-slot skill-slot-empty" data-key="4" tabindex="0" role="button" aria-label="空技能槽">
+                <div class="skill-cooldown-overlay"></div>
+                <span class="key-hint">4</span>
+            </div>
+        </div>
+
+        <!-- Equipment panel -->
+        <div class="equipment-panel" id="equipment-panel">
+            <div class="equipment-panel-title">装备</div>
         </div>
     </div>
 

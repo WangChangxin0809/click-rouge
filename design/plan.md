@@ -67,14 +67,31 @@
 
 ---
 
-## Phase 4: Boss 系统
-
+## Phase 4: Boss 系统 ✅
 - [x] `src/entities/boss.js` — 3 种 Boss 行为模式（charge/summon/zigzag）
 - [x] `src/data/boss-definitions.js` — 3 种 Boss 类型 + tier 分级
 - [x] spawn-system 集成 — Boss 定时生成，难度缩放，事件路由
 - [x] `src/ui/reward-panel.js` — N 选 1 奖励面板
-- [x] `src/systems/reward-system.js` — 奖励生成逻辑（桩→真实数据）
+- [x] `src/systems/reward-system.js` — 奖励生成逻辑（已从桩→真实数据）
 - [ ] 验证：Boss 出现→击杀→选奖励→继续游戏
+
+## Phase 5: 完整奖励数据（审查修复中 — PRs #7 #8 #9）
+- [x] `src/data/equipment-data.js` — 12 件装备（4 tier × 3 slot）
+- [x] `src/data/skill-data.js` — 6 种主动技能
+- [x] `src/data/follower-data.js` — 4 种随从
+- [x] `src/data/buff-data.js` — 6 种被动增益
+- [x] `src/data/balance-config.js` — 集中数值常量
+- [x] `src/systems/progression-system.js` — 属性聚合
+- [ ] `src/systems/skill-system.js` — 技能冷却 + 激活（PR #8 NEEDS_FIX）
+- [ ] `src/entities/follower.js` — 随从 AI（PR #8 NEEDS_FIX）
+- [ ] `src/ui/equipment-panel.js` — 装备面板（PR #9 NEEDS_FIX）
+- [ ] `src/ui/skill-bar.js` — 技能栏冷却显示（PR #9 NEEDS_FIX）
+
+## Phase 6: 技能/随从渲染
+
+- [ ] `src/entities/projectile.js` — 投射物
+- [ ] `src/rendering/follower-renderer.js` — 随从绘制
+- [ ] 集成到 main.js + canvas-renderer
 
 ---
 

@@ -86,11 +86,27 @@ export function updateCombatSystem() {
     const result = damageEnemy(nearest, damage);
 
     // Build the payload once for both hit/died events
+    // Apply poison_blade extra damage if active
+    let bonusDamage = 0;
+    if (STATE.player.poisonBladeDamage > 0) {
+        bonusDamage = STATE.player.poisonBladeDamage;
+        STATE.player.poisonBladeDamage = 0;
+        const bonusResult = damageEnemy(nearest, bonusDamage);
+        // Merge overkill from bonus damage
+        if (bonusResult.killed && !result.killed) {
+            result.killed = true;
+            result.overkill = bonusResult.overkill;
+        } else if (bonusResult.killed) {
+            result.overkill += bonusResult.overkill;
+        }
+    }
+
     const payload = {
         enemy: nearest,
-        damage,
+        damage: damage + bonusDamage,
         isCrit,
         overkill: result.overkill,
+        poisonBonus: bonusDamage,
         position: { x: click.x, y: click.y },
     };
 
