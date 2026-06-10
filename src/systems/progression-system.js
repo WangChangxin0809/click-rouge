@@ -75,13 +75,13 @@ export function recalculateStats() {
 
     // --- Sum flat and percent bonuses ---
 
-    // Flat sums
+    // Flat sums — always init from BALANCE constants to prevent re-recalc stacking
     let atkFlat = 0;
     let maxHpFlat = 0;
-    let critChanceSum = p.critChance || BALANCE.PLAYER_INITIAL_CRIT_CHANCE;
-    let critMultSum = p.critMult || BALANCE.PLAYER_INITIAL_CRIT_MULT;
+    let critChanceSum = BALANCE.PLAYER_INITIAL_CRIT_CHANCE;
+    let critMultSum = BALANCE.PLAYER_INITIAL_CRIT_MULT;
     let goldMultSum = BALANCE.GOLD_MULTIPLIER_BASE;
-    let atkSpeedSum = p.atkSpeedMult || 1.0;
+    let atkSpeedSum = BALANCE.PLAYER_INITIAL_ATK_SPEED_MULT;
     let thornsSum = 0;
     let lifestealSum = 0;
 
@@ -133,13 +133,6 @@ export function recalculateStats() {
             if (stats[key] !== undefined) {
                 maxHpFlat += stats[key];
             }
-        }
-    }
-
-    // Also check maxHpPercent in equipment (e.g. dragon_scale armor)
-    for (const stats of allStats) {
-        if (stats.maxHpPercent !== undefined) {
-            maxHpPercentSum += stats.maxHpPercent;
         }
     }
 

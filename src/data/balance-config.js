@@ -23,6 +23,9 @@ export const BALANCE = {
     /** Player initial crit damage multiplier */
     PLAYER_INITIAL_CRIT_MULT: 1.5,
 
+    /** Player initial attack speed multiplier (1.0 = normal) */
+    PLAYER_INITIAL_ATK_SPEED_MULT: 1.0,
+
     /** Maximum number of simultaneous enemies on screen */
     MAX_ENEMIES: 50,
 

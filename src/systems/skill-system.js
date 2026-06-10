@@ -24,6 +24,7 @@ import { STATE } from '../core/game-state.js';
 import { events } from '../core/event-bus.js';
 import { SKILL_DEFINITIONS } from '../data/skill-definitions.js';
 import { damageEnemy } from '../entities/enemy.js';
+import { awardGold } from './combat-system.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state

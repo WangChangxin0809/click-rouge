@@ -24,6 +24,24 @@ import { events } from '../core/event-bus.js';
 import { rng } from '../core/random.js';
 import { damageEnemy } from '../entities/enemy.js';
 
+// ---------------------------------------------------------------------------
+// Gold award — centralised to apply goldMultiplier
+// ---------------------------------------------------------------------------
+
+/**
+ * Award gold to the player, applying the current gold multiplier.
+ *
+ * All gameplay systems that grant gold (combat kills, skill effects,
+ * follower kills, projectile kills) MUST use this function so that
+ * gold_rush and other gold-multiplier effects work correctly.
+ *
+ * @param {number} amount - Base gold amount before multiplier
+ */
+export function awardGold(amount) {
+    const multiplier = STATE.player.goldMultiplier || 1.0;
+    STATE.player.gold += amount * multiplier;
+}
+
 /** Maximum pixel distance from click point to enemy center for a valid hit */
 const CLICK_RANGE = 200;
 
@@ -112,7 +130,7 @@ export function updateCombatSystem() {
 
     if (result.killed) {
         // Award gold and increment kill count
-        STATE.player.gold += nearest.gold;
+        awardGold(nearest.gold);
         STATE.killCount++;
         events.emit('enemy:died', payload);
     } else {

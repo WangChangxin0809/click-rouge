@@ -21,6 +21,7 @@
 import { damageEnemy } from './enemy.js';
 import { events } from '../core/event-bus.js';
 import { STATE } from '../core/game-state.js';
+import { awardGold } from '../systems/combat-system.js';
 
 // ---------------------------------------------------------------------------
 // Auto-incrementing ID
