@@ -19,7 +19,7 @@ import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
 import { generateRewards, applyReward } from './systems/reward-system.js';
-import { showRewardPanel } from './ui/reward-panel.js';
+import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -203,6 +203,9 @@ window.addEventListener('keydown', handleKeyDown);
  * Start (or restart) a new game run.
  */
 function startGame() {
+    // Clean up any lingering reward panel from a previous run
+    hideRewardPanel();
+
     STATE.reset();
     STATE.gameStatus = 'playing';
     STATE.clickQueue = [];
@@ -329,6 +332,7 @@ events.on('boss:died', (payload) => {
     const rewards = generateRewards(payload.tier);
     showRewardPanel(rewards, (reward) => {
         applyReward(reward);
+        STATE.gameStatus = 'playing';
     });
 });
 

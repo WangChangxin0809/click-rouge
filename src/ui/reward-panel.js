@@ -18,7 +18,6 @@
  *   hideRewardPanel(); // manual close (e.g., on game reset)
  */
 
-import { STATE } from '../core/game-state.js';
 import { events } from '../core/event-bus.js';
 
 // ---------------------------------------------------------------------------
@@ -33,6 +32,9 @@ let _onPickCallback = null;
 
 /** @type {boolean} */
 let _selectionLocked = false;
+
+/** @type {number|null} */
+let _selectionTimerId = null;
 
 // ---------------------------------------------------------------------------
 // Type icon mapping
@@ -129,6 +131,10 @@ export function showRewardPanel(rewards, onPick) {
  * Safe to call even when no panel is showing (no-op).
  */
 export function hideRewardPanel() {
+    if (_selectionTimerId !== null) {
+        clearTimeout(_selectionTimerId);
+        _selectionTimerId = null;
+    }
     if (_panelEl) {
         _panelEl.remove();
         _panelEl = null;
@@ -224,22 +230,18 @@ function _handleSelection(reward, cardEl) {
     // Visual feedback — highlight the selected card
     cardEl.classList.add('reward-card-selected');
 
-    // Delay hiding to allow the selection animation to play
-    setTimeout(() => {
-        hideRewardPanel();
+    // Save callback reference before hideRewardPanel clears it
+    const onPick = _onPickCallback;
 
-        // Restore game status before calling onPick, so any side effects
-        // (like UI updates) happen while the game is "playing"
-        STATE.gameStatus = 'playing';
+    hideRewardPanel();
 
-        // Fire events
-        events.emit('reward:selected', reward);
+    // Fire events
+    events.emit('reward:selected', reward);
 
-        // Invoke the callback (applyReward, etc.)
-        if (_onPickCallback) {
-            _onPickCallback(reward);
-        }
-    }, 300);
+    // Invoke the callback — caller (main.js) manages game state transitions
+    if (onPick) {
+        onPick(reward);
+    }
 }
 
 // ---------------------------------------------------------------------------
