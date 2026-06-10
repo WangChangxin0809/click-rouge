@@ -53,8 +53,8 @@ export class CanvasRenderer {
      */
     render(state) {
         const ctx = this.ctx;
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
+        const cx = DESIGN_WIDTH / 2;
+        const cy = DESIGN_HEIGHT / 2;
 
         // Ensure canvas size matches window (lazy resize each frame)
         this._resize();
