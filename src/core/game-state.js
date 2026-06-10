@@ -50,7 +50,16 @@ const INITIAL_STATE = {
 
         /** @type {Object[]} Acquired passive buffs */
         passiveBuffs: [],
+
+        /** @type {number} Gold multiplier from buffs/skills (1.0 = normal) */
+        goldMultiplier: 1.0,
+
+        /** @type {number} Extra damage on next click (consumed by combat system) */
+        poisonBladeDamage: 0,
     },
+
+    /** @type {Object[]} Active skill effects with timers (berserk, freeze, gold_rush) */
+    activeEffects: [],
 
     /** @type {Object[]} Active enemy entities on the field */
     enemies: [],

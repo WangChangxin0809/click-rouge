@@ -29,6 +29,8 @@
 
 import { renderEnemies } from './enemy-renderer.js';
 import { renderParticles } from './fx-renderer.js';
+import { renderFollowers } from './follower-renderer.js';
+import { renderProjectiles } from '../entities/projectile.js';
 import { getShakeOffset } from './screen-shake.js';
 
 // ---------------------------------------------------------------------------
@@ -309,6 +311,8 @@ export class CanvasRenderer {
         // Render game entities
         renderEnemies(ctx, state.enemies);
         renderParticles(ctx, state.particles);
+        renderFollowers(ctx, state.player?.activeFollowers || []);
+        renderProjectiles(ctx);
 
         ctx.restore(); // shake
         ctx.restore(); // scale
