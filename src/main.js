@@ -301,27 +301,12 @@ events.on('game:triggerGameOver', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Reward system wiring — boss defeated → reward selection
+// Reward system wiring — real boss defeated → reward selection
 // ---------------------------------------------------------------------------
 
 /**
- * When a new wave starts, treat it as a "boss defeated" event.
- * Higher waves produce higher-tier bosses with more reward choices.
- *
- * Wave 1 is the starting wave (no boss reward).
- * Waves 2-4 → tier 1 boss (3 reward choices).
- * Waves 5+ → tier 2 boss (4 reward choices).
- */
-events.on('wave:start', (payload) => {
-    if (STATE.gameStatus !== 'playing') return;
-    if (payload.wave <= 1) return;
-
-    const bossTier = payload.wave >= 5 ? 2 : 1;
-    events.emit('boss:died', { tier: bossTier, wave: payload.wave });
-});
-
-/**
  * Boss defeated → pause gameplay and show reward selection panel.
+ * Triggered by boss:died event from spawn-system (real boss death).
  */
 events.on('boss:died', (payload) => {
     // Guard: only trigger reward picking during active gameplay
