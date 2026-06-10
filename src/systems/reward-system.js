@@ -1,12 +1,15 @@
 /**
  * Reward System — Generates reward options after boss kills.
  *
- * Currently uses stub data with random names/descriptions. In Phase 5 this
- * will be replaced with real reward definitions from a data table.
+ * Uses real data tables (equipment, skills, followers, buffs) to generate
+ * meaningful choices. Distribution: 30% equipment / 25% skills / 25% followers
+ * / 20% passive buffs. Tier affects equipment quality and available options.
  *
  * Integration:
  *   boss:died event emits → generateRewards(bossTier) → showRewardPanel(...)
- *   Player picks → applyReward(reward) → STATE.player updated
+ *   Player picks → applyReward(reward) → recalculateStats() → STATE updated
+ *
+ * Design Doc: Reward System Phase 5 — Data-Driven Rewards
  *
  * Usage:
  *   import { generateRewards, applyReward } from './systems/reward-system.js';
@@ -14,61 +17,22 @@
 
 import { STATE } from '../core/game-state.js';
 import { rng } from '../core/random.js';
+import { EQUIPMENT } from '../data/equipment-data.js';
+import { SKILLS } from '../data/skill-data.js';
+import { FOLLOWERS } from '../data/follower-data.js';
+import { BUFFS } from '../data/buff-data.js';
+import { BALANCE } from '../data/balance-config.js';
+import { recalculateStats } from './progression-system.js';
 
 // ---------------------------------------------------------------------------
-// Stub data tables — will be replaced with data-driven definitions in Phase 5
+// Reward type distribution (must sum to 1.0)
 // ---------------------------------------------------------------------------
 
-/** @type {string[]} */
-const WEAPON_NAMES = [
-    '短剑', '长剑', '战斧', '长弓', '法杖',
-    '匕首', '巨锤', '链枷', '双刃斧', '刺矛',
-];
-
-/** @type {string[]} */
-const SKILL_NAMES = [
-    '火球术', '雷电链', '冰霜新星', '毒雾',
-    '神圣之光', '暗影步', '旋风斩', '大地震击',
-];
-
-/** @type {string[]} */
-const FOLLOWER_NAMES = [
-    '小精灵', '骷髅兵', '火元素', '冰元素',
-    '暗影分身', '治愈精灵', '石魔偶', '雷鸟',
-];
-
-/** @type {string[]} */
-const BUFF_NAMES = [
-    '力量祝福', '敏捷光环', '生命之泉', '荆棘护甲',
-    '暴击专注', '吸血之触', '钢铁皮肤', '疾风步',
-];
-
-/** @type {Object<string, string>} */
-const TYPE_DESCRIPTION_POOLS = {
-    weapon: [
-        '提升基础攻击力',
-        '使你的点击造成更多伤害',
-        '锋利的刀刃，无坚不摧',
-        '传说中的武器，赋予持有者力量',
-    ],
-    skill: [
-        '获得一项主动技能',
-        '按下技能键释放强力攻击',
-        '冷却时间结束后可再次使用',
-        '大范围攻击，清屏利器',
-    ],
-    follower: [
-        '召唤一名追随者协助战斗',
-        '追随者会自动攻击附近的敌人',
-        '可靠的伙伴，永远在你身边',
-        '神秘的生物，拥有独特的能力',
-    ],
-    buff: [
-        '获得一个永久增益效果',
-        '提升你的基础属性',
-        '被动生效，无需操作',
-        '来自远古的力量祝福',
-    ],
+const TYPE_WEIGHTS = {
+    equipment: 0.30,
+    skill: 0.25,
+    follower: 0.25,
+    buff: 0.20,
 };
 
 // ---------------------------------------------------------------------------
@@ -79,30 +43,36 @@ const TYPE_DESCRIPTION_POOLS = {
  * Generate reward options for the player to choose from.
  *
  * @param {number} bossTier - Boss tier (1 = 3 choices, 2+ = 4 choices)
- * @returns {Array<{id: string, name: string, description: string, type: string, tier: number, stats: Object}>}
+ * @returns {Array<{id: string, name: string, description: string, type: string, tier: number, stats: Object, slot?: string}>}
  */
 export function generateRewards(bossTier) {
     const count = bossTier >= 2 ? 4 : 3;
-    const types = ['weapon', 'skill', 'follower', 'buff'];
-
-    // Shuffle types so we get a random selection, but ensure at least one
-    // weapon is included in the pool (stub rule for playability).
-    const shuffledTypes = [...types];
-    rng.shuffle(shuffledTypes);
-
     const rewards = [];
     const timestamp = Date.now();
 
     for (let i = 0; i < count; i++) {
-        const type = shuffledTypes[i % shuffledTypes.length];
-        rewards.push({
-            id: `reward_${timestamp}_${i}`,
-            name: rng.pickOne(_getNamePool(type)),
-            description: rng.pickOne(TYPE_DESCRIPTION_POOLS[type] || ['强力奖励']),
-            type,
-            tier: bossTier,
-            stats: _generateStats(type, bossTier),
-        });
+        const type = _pickRewardType();
+        let reward;
+
+        switch (type) {
+            case 'equipment':
+                reward = _generateEquipment(bossTier, timestamp, i);
+                break;
+            case 'skill':
+                reward = _generateSkill(bossTier, timestamp, i);
+                break;
+            case 'follower':
+                reward = _generateFollower(bossTier, timestamp, i);
+                break;
+            case 'buff':
+                reward = _generateBuff(timestamp, i);
+                break;
+            default:
+                // Fallback
+                reward = _generateEquipment(bossTier, timestamp, i);
+        }
+
+        rewards.push(reward);
     }
 
     return rewards;
@@ -111,128 +81,344 @@ export function generateRewards(bossTier) {
 /**
  * Apply a selected reward to the player's state.
  *
- * Mutates STATE.player directly — no return value.
+ * Mutates STATE.player directly, then calls recalculateStats().
  *
  * @param {Object} reward - The reward object from generateRewards()
  */
 export function applyReward(reward) {
     switch (reward.type) {
-        case 'weapon': {
-            const atkBonus = reward.stats.atk || 0;
-            STATE.player.baseAtk += atkBonus;
-            // clickAtk should track baseAtk for simplicity in this stub
-            STATE.player.clickAtk = STATE.player.baseAtk;
+        case 'weapon':
+        case 'armor':
+        case 'accessory': {
+            // Place into equip slot, replace existing
+            if (!STATE.player.equipSlots) {
+                STATE.player.equipSlots = { weapon: null, armor: null, accessory: null };
+            }
+            STATE.player.equipSlots[reward.slot] = reward;
             break;
         }
         case 'skill': {
             if (!STATE.player.activeSkills) {
                 STATE.player.activeSkills = [];
             }
-            STATE.player.activeSkills.push({
-                id: reward.id,
-                name: reward.name,
-                description: reward.description,
-                stats: reward.stats,
-            });
+            // Check for existing skill of the same id — offer upgrade (stack)
+            const existingIdx = STATE.player.activeSkills.findIndex(
+                s => s.id === reward.id
+            );
+            if (existingIdx >= 0) {
+                // Upgrade: increment stack count
+                const existing = STATE.player.activeSkills[existingIdx];
+                existing.stack = (existing.stack || 1) + 1;
+                existing.description = `${reward.description} (等级 ${existing.stack})`;
+            } else {
+                // New skill
+                if (STATE.player.activeSkills.length < BALANCE.MAX_SKILL_SLOTS) {
+                    STATE.player.activeSkills.push({
+                        id: reward.id,
+                        name: reward.name,
+                        description: reward.description,
+                        effectType: reward.effectType,
+                        cooldown: reward.cooldown,
+                        duration: reward.duration,
+                        stack: 1,
+                    });
+                } else {
+                    console.warn('[RewardSystem] Skill slots full, cannot add:', reward.name);
+                }
+            }
             break;
         }
         case 'follower': {
             if (!STATE.player.activeFollowers) {
                 STATE.player.activeFollowers = [];
             }
-            STATE.player.activeFollowers.push({
-                id: reward.id,
-                name: reward.name,
-                description: reward.description,
-                stats: reward.stats,
-            });
+            // Check for existing follower of the same type
+            const existingIdx = STATE.player.activeFollowers.findIndex(
+                f => f.id === reward.id
+            );
+            if (existingIdx >= 0) {
+                // Upgrade: increment level
+                const existing = STATE.player.activeFollowers[existingIdx];
+                existing.level = (existing.level || 1) + 1;
+                existing.description = `${reward.description} (等级 ${existing.level})`;
+                // Scale stats with level
+                if (existing.type === 'combat' && existing.stats && existing.stats.damage) {
+                    existing.stats.damage = Math.round(existing.stats.damage * 1.2);
+                }
+            } else {
+                if (STATE.player.activeFollowers.length < BALANCE.MAX_FOLLOWERS) {
+                    STATE.player.activeFollowers.push({
+                        id: reward.id,
+                        name: reward.name,
+                        description: reward.description,
+                        type: reward.type,
+                        stats: { ...reward.stats },
+                        level: 1,
+                    });
+                } else {
+                    console.warn('[RewardSystem] Follower slots full, cannot add:', reward.name);
+                }
+            }
             break;
         }
         case 'buff': {
             if (!STATE.player.passiveBuffs) {
                 STATE.player.passiveBuffs = [];
             }
+            // Buffs are always stackable — push a new instance
             STATE.player.passiveBuffs.push({
                 id: reward.id,
                 name: reward.name,
                 description: reward.description,
-                stats: reward.stats,
+                stats: { ...reward.stats },
+                stackable: true,
             });
             break;
         }
         default:
             console.warn(`[RewardSystem] Unknown reward type: ${reward.type}`);
     }
+
+    // Recalculate effective stats after applying the reward
+    recalculateStats();
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Internal: type selection
 // ---------------------------------------------------------------------------
 
 /**
- * Get the name pool for a given reward type.
- * @param {string} type
- * @returns {string[]}
+ * Pick a reward type based on configured weights.
+ * @returns {'equipment'|'skill'|'follower'|'buff'}
  */
-function _getNamePool(type) {
-    switch (type) {
-        case 'weapon':   return WEAPON_NAMES;
-        case 'skill':    return SKILL_NAMES;
-        case 'follower': return FOLLOWER_NAMES;
-        case 'buff':     return BUFF_NAMES;
-        default:         return ['未知奖励'];
+function _pickRewardType() {
+    const roll = rng.next();
+    let cumulative = 0;
+    for (const [type, weight] of Object.entries(TYPE_WEIGHTS)) {
+        cumulative += weight;
+        if (roll < cumulative) {
+            return type;
+        }
     }
+    return 'equipment'; // fallback
 }
 
+// ---------------------------------------------------------------------------
+// Internal: specific reward generators
+// ---------------------------------------------------------------------------
+
 /**
- * Generate stub stats for a reward based on type and tier.
+ * Generate an equipment reward.
  *
- * @param {string} type
- * @param {number} tier
- * @returns {Object} A stats object with numeric values
+ * Tier determines maximum equipment quality:
+ *   tier 1 → can see tier 1-2 weapons/armor/accessories
+ *   tier 2 → can see tier 1-3
+ *   tier 3+ → can see tier 1-4
+ *
+ * Prefers filling empty slots or upgrading lower-tier equipment.
+ *
+ * @param {number} bossTier
+ * @param {number} timestamp
+ * @param {number} index
+ * @returns {Object}
  */
-function _generateStats(type, tier) {
-    // Scale bonuses with tier — higher tier = stronger rewards
-    const multiplier = 1 + (tier - 1) * 0.5;
+function _generateEquipment(bossTier, timestamp, index) {
+    // Determine available slots and their current tier
+    const slots = ['weapon', 'armor', 'accessory'];
+    const availableTiers = [];
+    const slotInfo = [];
 
-    switch (type) {
-        case 'weapon': {
-            const baseAtk = rng.nextInt(3, 8);
-            return {
-                atk: Math.round(baseAtk * multiplier),
-                critChance: Math.round(rng.nextFloat(0.01, 0.05) * multiplier * 100) / 100,
-            };
-        }
-        case 'skill': {
-            const baseDmg = rng.nextInt(20, 50);
-            return {
-                damage: Math.round(baseDmg * multiplier),
-                cooldown: rng.nextInt(5, 10),
-                aoeRange: rng.nextInt(100, 200),
-            };
-        }
-        case 'follower': {
-            const baseDmg = rng.nextInt(3, 10);
-            return {
-                damage: Math.round(baseDmg * multiplier),
-                attackSpeed: Math.round(rng.nextFloat(0.5, 1.5) * 10) / 10,
-                hp: Math.round(rng.nextInt(20, 60) * multiplier),
-            };
-        }
-        case 'buff': {
-            const bonuses = {};
-            const pool = ['atk', 'maxHp', 'critChance', 'atkSpeedMult'];
-            const picked = rng.pickOne(pool);
-            const val = rng.nextFloat(5, 15) * multiplier;
-            bonuses[picked] = Math.round(val * 10) / 10;
-
-            // Always include a secondary smaller bonus
-            const secondary = rng.pickOne(pool.filter(p => p !== picked));
-            bonuses[secondary] = Math.round(rng.nextFloat(2, 6) * multiplier * 10) / 10;
-
-            return bonuses;
-        }
-        default:
-            return { atk: 5 };
+    for (const slot of slots) {
+        const currentEquip = STATE.player.equipSlots?.[slot] || null;
+        const currentTier = currentEquip ? currentEquip.tier : 0;
+        slotInfo.push({ slot, currentTier, currentEquip });
     }
+
+    // Determine max tier based on boss tier
+    const maxEquipmentTier = Math.min(bossTier + 1, 4);
+
+    // Build pool of eligible items: higher tier than current in the same slot
+    /** @type {Array<{slot: string, item: Object}>} */
+    const eligibleItems = [];
+
+    for (const info of slotInfo) {
+        const items = EQUIPMENT[info.slot] || [];
+        for (const item of items) {
+            if (item.tier <= maxEquipmentTier && item.tier > info.currentTier) {
+                eligibleItems.push({ slot: info.slot, item });
+            }
+        }
+    }
+
+    // If no upgrades available, pick a random equipment from the current tier range
+    if (eligibleItems.length === 0) {
+        const slot = rng.pickOne(slots);
+        const items = EQUIPMENT[slot] || [];
+        // Pick an item at or below max tier
+        const tierFiltered = items.filter(it => it.tier <= maxEquipmentTier);
+        const item = tierFiltered.length > 0 ? rng.pickOne(tierFiltered) : items[0];
+        return {
+            id: `reward_${timestamp}_${index}`,
+            name: item.name,
+            description: _equipDescription(item),
+            type: item.slot,
+            tier: item.tier,
+            slot: item.slot,
+            stats: { ...item.stats },
+        };
+    }
+
+    // Prefer empty slots or largest upgrade
+    const emptySlotItems = eligibleItems.filter(
+        e => !STATE.player.equipSlots?.[e.slot]
+    );
+    const chosen = emptySlotItems.length > 0
+        ? rng.pickOne(emptySlotItems)
+        : rng.pickOne(eligibleItems);
+
+    return {
+        id: `reward_${timestamp}_${index}`,
+        name: chosen.item.name,
+        description: _equipDescription(chosen.item),
+        type: chosen.item.slot,
+        tier: chosen.item.tier,
+        slot: chosen.item.slot,
+        stats: { ...chosen.item.stats },
+    };
+}
+
+/**
+ * Generate a skill reward.
+ *
+ * Only offers skills the player does not already have (or offers upgrade
+ * for existing skills if all are owned).
+ *
+ * @param {number} bossTier
+ * @param {number} timestamp
+ * @param {number} index
+ * @returns {Object}
+ */
+function _generateSkill(bossTier, timestamp, index) {
+    const ownedIds = (STATE.player.activeSkills || []).map(s => s.id);
+
+    // Skills unavailable until certain tiers
+    const tierUnlock = bossTier >= 2
+        ? SKILLS
+        : SKILLS.filter(s => ['thunder_strike', 'heal', 'poison_blade'].includes(s.id));
+
+    // Prefer unowned skills
+    const unowned = tierUnlock.filter(s => !ownedIds.includes(s.id));
+
+    let chosen;
+    if (unowned.length > 0) {
+        chosen = rng.pickOne(unowned);
+    } else {
+        // Player has all skills — offer upgrade for a random owned one
+        const owned = tierUnlock.filter(s => ownedIds.includes(s.id));
+        chosen = owned.length > 0 ? rng.pickOne(owned) : rng.pickOne(SKILLS);
+    }
+
+    return {
+        id: `reward_${timestamp}_${index}`,
+        name: chosen.name,
+        description: chosen.description,
+        type: 'skill',
+        tier: bossTier,
+        cooldown: chosen.cooldown,
+        duration: chosen.duration,
+        effectType: chosen.effectType,
+        stats: {},
+    };
+}
+
+/**
+ * Generate a follower reward.
+ *
+ * @param {number} bossTier
+ * @param {number} timestamp
+ * @param {number} index
+ * @returns {Object}
+ */
+function _generateFollower(bossTier, timestamp, index) {
+    const ownedIds = (STATE.player.activeFollowers || []).map(f => f.id);
+
+    // T2+ unlocks combat followers, T3+ unlocks support
+    let available = FOLLOWERS;
+    if (bossTier < 2) {
+        available = FOLLOWERS.filter(f => f.id === 'knight' || f.id === 'healer_fairy');
+    }
+    if (bossTier < 3) {
+        available = available.filter(f => f.type === 'combat');
+    }
+
+    // Prefer unowned
+    const unowned = available.filter(f => !ownedIds.includes(f.id));
+
+    let chosen;
+    if (unowned.length > 0) {
+        chosen = rng.pickOne(unowned);
+    } else {
+        // Offer upgrade for existing
+        const owned = available.filter(f => ownedIds.includes(f.id));
+        chosen = owned.length > 0 ? rng.pickOne(owned) : rng.pickOne(FOLLOWERS);
+    }
+
+    return {
+        id: `reward_${timestamp}_${index}`,
+        name: chosen.name,
+        description: chosen.description,
+        type: 'follower',
+        tier: bossTier,
+        followerType: chosen.type,
+        stats: { ...chosen.stats },
+    };
+}
+
+/**
+ * Generate a passive buff reward.
+ * All buffs are stackable and always available.
+ *
+ * @param {number} timestamp
+ * @param {number} index
+ * @returns {Object}
+ */
+function _generateBuff(timestamp, index) {
+    // Pick any buff — all are stackable
+    const chosen = rng.pickOne(BUFFS);
+
+    return {
+        id: `reward_${timestamp}_${index}`,
+        name: chosen.name,
+        description: chosen.description,
+        type: 'buff',
+        tier: 1,
+        stats: { ...chosen.stats },
+        stackable: true,
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Internal: description helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a human-readable stat description for an equipment item.
+ * @param {Object} item
+ * @returns {string}
+ */
+function _equipDescription(item) {
+    const parts = [];
+    const s = item.stats || {};
+
+    if (s.atk) parts.push(`+${s.atk} 攻击`);
+    if (s.maxHp) parts.push(`+${s.maxHp} 生命`);
+    if (s.maxHpPercent) parts.push(`+${Math.round(s.maxHpPercent * 100)}% 生命`);
+    if (s.critChance) parts.push(`+${Math.round(s.critChance * 100)}% 暴击率`);
+    if (s.critMult) parts.push(`+${s.critMult} 暴击倍率`);
+    if (s.goldMultiplier) parts.push(`+${Math.round(s.goldMultiplier * 100)}% 金币`);
+    if (s.atkSpeedMult) parts.push(`+${Math.round(s.atkSpeedMult * 100)}% 攻速`);
+    if (s.thorns) parts.push(`+${s.thorns} 反伤`);
+    if (s.lifesteal) parts.push(`+${Math.round(s.lifesteal * 100)}% 吸血`);
+
+    return parts.join('，') || '无特殊属性';
 }

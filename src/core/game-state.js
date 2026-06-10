@@ -16,12 +16,20 @@
  * @property {number} hp
  * @property {number} maxHp
  * @property {number} baseAtk
+ * @property {number} atk         — Effective attack (baseAtk + bonuses)
  * @property {number} gold
- * @property {number} clickAtk    — Damage per click (before multipliers)
+ * @property {number} clickAtk    — Damage per click (synced to atk)
  * @property {number} autoAtk     — Passive damage per second
  * @property {number} critChance  — Critical hit chance (0..1)
  * @property {number} critMult    — Critical hit damage multiplier
  * @property {number} atkSpeedMult — Attack speed multiplier (1.0 = normal)
+ * @property {number} goldMultiplier — Gold gain multiplier
+ * @property {number} thorns      — Damage reflected to attacker per hit
+ * @property {number} lifesteal   — Fraction of damage converted to HP
+ * @property {Object} equipSlots  — { weapon, armor, accessory } each EquipmentDef|null
+ * @property {Object[]} activeSkills — Equipped active skills
+ * @property {Object[]} activeFollowers — Active followers
+ * @property {Object[]} passiveBuffs — Acquired passive buffs (stackable)
  */
 
 /**
@@ -35,12 +43,16 @@ const INITIAL_STATE = {
         hp: 100,
         maxHp: 100,
         baseAtk: 10,
+        atk: 10,
         gold: 0,
         clickAtk: 10,
         autoAtk: 0,
         critChance: 0.05,
         critMult: 1.5,
         atkSpeedMult: 1.0,
+        goldMultiplier: 1.0,
+        thorns: 0,
+        lifesteal: 0,
 
         /** @type {Object[]} Acquired active skills */
         activeSkills: [],
@@ -50,6 +62,13 @@ const INITIAL_STATE = {
 
         /** @type {Object[]} Acquired passive buffs */
         passiveBuffs: [],
+
+        /** @type {{weapon: Object|null, armor: Object|null, accessory: Object|null}} Equipped items */
+        equipSlots: {
+            weapon: null,
+            armor: null,
+            accessory: null,
+        },
     },
 
     /** @type {Object[]} Active enemy entities on the field */
