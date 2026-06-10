@@ -41,6 +41,15 @@ const INITIAL_STATE = {
         critChance: 0.05,
         critMult: 1.5,
         atkSpeedMult: 1.0,
+
+        /** @type {Object[]} Acquired active skills */
+        activeSkills: [],
+
+        /** @type {Object[]} Acquired followers */
+        activeFollowers: [],
+
+        /** @type {Object[]} Acquired passive buffs */
+        passiveBuffs: [],
     },
 
     /** @type {Object[]} Active enemy entities on the field */

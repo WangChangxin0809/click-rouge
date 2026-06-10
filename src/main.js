@@ -18,6 +18,8 @@ import { updateParticles, burstHit, burstDeath, burstCrit } from './rendering/fx
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
+import { generateRewards, applyReward } from './systems/reward-system.js';
+import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -201,6 +203,9 @@ window.addEventListener('keydown', handleKeyDown);
  * Start (or restart) a new game run.
  */
 function startGame() {
+    // Clean up any lingering reward panel from a previous run
+    hideRewardPanel();
+
     STATE.reset();
     STATE.gameStatus = 'playing';
     STATE.clickQueue = [];
@@ -293,6 +298,42 @@ events.on('player:damaged', (_payload) => {
 // Listen for game-over trigger from gameplay systems
 events.on('game:triggerGameOver', () => {
     endGame();
+});
+
+// ---------------------------------------------------------------------------
+// Reward system wiring — boss defeated → reward selection
+// ---------------------------------------------------------------------------
+
+/**
+ * When a new wave starts, treat it as a "boss defeated" event.
+ * Higher waves produce higher-tier bosses with more reward choices.
+ *
+ * Wave 1 is the starting wave (no boss reward).
+ * Waves 2-4 → tier 1 boss (3 reward choices).
+ * Waves 5+ → tier 2 boss (4 reward choices).
+ */
+events.on('wave:start', (payload) => {
+    if (STATE.gameStatus !== 'playing') return;
+    if (payload.wave <= 1) return;
+
+    const bossTier = payload.wave >= 5 ? 2 : 1;
+    events.emit('boss:died', { tier: bossTier, wave: payload.wave });
+});
+
+/**
+ * Boss defeated → pause gameplay and show reward selection panel.
+ */
+events.on('boss:died', (payload) => {
+    // Guard: only trigger reward picking during active gameplay
+    if (STATE.gameStatus !== 'playing') return;
+
+    STATE.gameStatus = 'rewardPicking';
+
+    const rewards = generateRewards(payload.tier);
+    showRewardPanel(rewards, (reward) => {
+        applyReward(reward);
+        STATE.gameStatus = 'playing';
+    });
 });
 
 // ---------------------------------------------------------------------------
