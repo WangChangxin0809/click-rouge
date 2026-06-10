@@ -27,7 +27,7 @@ import { STATE } from '../core/game-state.js';
 import { events } from '../core/event-bus.js';
 import { rng } from '../core/random.js';
 import { ENEMY_TYPES } from '../data/enemy-definitions.js';
-import { BOSS_TYPES, BOSS_TIERS } from '../data/boss-definitions.js';
+import { BOSS_TIERS } from '../data/boss-definitions.js';
 import { createEnemy, updateEnemy } from '../entities/enemy.js';
 import { createBoss, updateBoss } from '../entities/boss.js';
 import { getDifficulty } from './difficulty-system.js';
@@ -86,11 +86,18 @@ const WAVE_TYPE_POOL = [
  * near the boss's current position. Minions respect the active-enemy cap.
  */
 events.on('boss:summon', ({ x, y }) => {
+    const diff = getDifficulty();
     const count = rng.nextInt(BOSS_SUMMON_MINION_COUNT_MIN, BOSS_SUMMON_MINION_COUNT_MAX);
     for (let i = 0; i < count; i++) {
         if (STATE.enemies.length >= MAX_ENEMIES) break;
 
         const minion = createEnemy('slime', ENEMY_TYPES);
+        // Apply difficulty scaling so summoned minions match concurrent enemies
+        minion.hp *= diff.enemyHpMultiplier;
+        minion.maxHp = minion.hp;
+        minion.speed *= diff.enemySpeedMultiplier;
+        minion.damage *= diff.enemyDamageMultiplier;
+
         // Position near the boss with slight scatter
         minion.x = x + rng.nextFloat(-50, 50);
         minion.y = y + rng.nextFloat(-50, 50);

@@ -61,8 +61,10 @@ export function createBoss(typeId) {
 
     const id = _nextBossId++;
 
-    // -- Pick a random edge (same algorithm as createEnemy) -------------------
-    const edge = rng.nextInt(0, 3); // 0=top, 1=right, 2=bottom, 3=left
+    // -- Pick a random edge (zigzag restricted to top only) ------------------
+    // zigzag bosses descend slowly and would leave the screen if spawned from
+    // the bottom or sides — restrict to top edge (0) only.
+    const edge = def.behavior === 'zigzag' ? 0 : rng.nextInt(0, 3); // 0=top, 1=right, 2=bottom, 3=left
     const margin = def.size + 30;   // Larger margin than regular enemies for dramatic entrance
 
     let x, y;
@@ -202,8 +204,15 @@ export function updateBoss(boss, dt) {
         // zigzag — Sine-wave horizontal + slow vertical descent
         // -----------------------------------------------------------------------
         case 'zigzag': {
-            // Horizontal: sine wave oscillation (frequency = 4 rad/s)
-            boss.x += Math.sin(boss.timer * 4) * boss.speed * dt;
+            // Initialize base X on first frame for smooth oscillation around
+            // the spawn position
+            if (boss._zigzagBaseX === undefined) {
+                boss._zigzagBaseX = boss.x;
+            }
+
+            // Horizontal: sine wave around base X with configurable amplitude
+            const amplitude = boss.amplitude || 120;
+            boss.x = boss._zigzagBaseX + Math.sin(boss.timer * 4) * amplitude;
 
             // Vertical: slow descent (0.3x speed, ignores dirY)
             boss.y += boss.speed * 0.3 * dt;

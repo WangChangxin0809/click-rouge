@@ -72,6 +72,7 @@ export const BOSS_TYPES = {
         lifetime: 18,
         behavior: 'zigzag',
         tier: 2,
+        amplitude: 120,
     },
 };
 
