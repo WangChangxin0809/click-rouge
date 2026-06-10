@@ -13,9 +13,9 @@ import { CanvasRenderer, DESIGN_WIDTH, DESIGN_HEIGHT } from './rendering/canvas-
 import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
 import { updateCombatSystem } from './systems/combat-system.js';
 import { updateEconomySystem } from './systems/economy-system.js';
-import { updateParticles } from './rendering/fx-renderer.js';
-import { updateShake } from './rendering/screen-shake.js';
-import { initAudio } from './audio/audio-manager.js';
+import { updateParticles, burstHit, burstDeath, burstCrit } from './rendering/fx-renderer.js';
+import { updateShake, triggerShake } from './rendering/screen-shake.js';
+import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -242,6 +242,25 @@ btnRestart.addEventListener('click', startGame);
 // ---------------------------------------------------------------------------
 // EventBus listeners (game-level)
 // ---------------------------------------------------------------------------
+
+// Combat → particles + audio + screen shake
+events.on('enemy:hit', (payload) => {
+    burstHit(payload.position.x, payload.position.y);
+    if (payload.isCrit) {
+        burstCrit(payload.position.x, payload.position.y);
+        playCrit();
+        triggerShake(4, 0.1);
+    } else {
+        playHit();
+        triggerShake(2, 0.05);
+    }
+});
+
+events.on('enemy:died', (payload) => {
+    burstDeath(payload.enemy.x, payload.enemy.y, payload.enemy.color);
+    playDeath();
+    triggerShake(8, 0.2);
+});
 
 // Listen for game-over trigger from gameplay systems
 events.on('game:triggerGameOver', () => {
