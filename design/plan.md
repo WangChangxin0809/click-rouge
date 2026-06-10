@@ -1,6 +1,7 @@
 # Click Rouge 开发计划
 
 > 最后更新：2026-06-10
+> 状态：Phase 5+6 审查修复中（PRs #7 #8 #9 待 fix）
 > 状态：Phase 4 进行中（Boss 已合入，奖励系统审查中）
 
 ---
@@ -71,37 +72,27 @@
 - [x] `src/entities/boss.js` — 3 种 Boss 行为模式（charge/summon/zigzag）
 - [x] `src/data/boss-definitions.js` — 3 种 Boss 类型 + tier 分级
 - [x] spawn-system 集成 — Boss 定时生成，难度缩放，事件路由
-- [ ] `src/ui/reward-panel.js` — N 选 1 奖励面板（PR #5 审查中）
-- [ ] `src/systems/reward-system.js` — 奖励生成逻辑（PR #5 审查中）
+- [x] `src/ui/reward-panel.js` — N 选 1 奖励面板
+- [x] `src/systems/reward-system.js` — 奖励生成逻辑（桩→真实数据）
 - [ ] 验证：Boss 出现→击杀→选奖励→继续游戏
 
 ---
 
-## Phase 5: 完整奖励 + 成长
+## Phase 5+6: 奖励数据 + 技能/随从系统（审查修复中）
 
-**目标**: 装备/技能/随从/被动 全部可用
-
-- [ ] `src/data/equipment-data.js` — 装备数据表（4 层 x 3 槽位）
-- [ ] `src/data/skill-data.js` — 技能数据表
-- [ ] `src/data/follower-data.js` — 随从数据表
-- [ ] `src/data/buff-data.js` — 被动增益数据表
-- [ ] `src/data/balance-config.js` — 数值平衡常量
-- [ ] `src/systems/progression-system.js` — 属性聚合
-- [ ] `src/ui/equipment-panel.js` — 装备面板
-- [ ] `src/ui/skill-bar.js` — 技能栏
-- [ ] 验证：选装备→攻击力变高；选技能→技能栏出现；选随从→随从出现
-
----
-
-## Phase 6: 技能 + 随从 AI
-
-**目标**: 技能激活效果 → 随从自动攻击
-
-- [ ] `src/systems/skill-system.js` — 技能冷却 + 激活
-- [ ] `src/entities/follower.js` — 随从实体逻辑
-- [ ] `src/entities/projectile.js` — 投射物（弓箭等）
-- [ ] `src/rendering/follower-renderer.js` — 随从绘制
-- [ ] 验证：按技能键→效果触发；随从自动索敌攻击
+- [x] `src/data/equipment-data.js` — 12 件装备（4 tier × 3 slot）— PR #7
+- [x] `src/data/skill-data.js` — 6 种技能定义 — PR #8
+- [x] `src/data/follower-data.js` — 4 种随从定义 — PR #8
+- [x] `src/data/buff-data.js` — 6 种被动增益 — PR #7
+- [x] `src/data/balance-config.js` — 集中数值常量 — PR #7
+- [x] `src/systems/progression-system.js` — 属性聚合 — PR #7 NEEDS_FIX
+- [x] `src/systems/skill-system.js` — 技能冷却 + 激活 — PR #8 NEEDS_FIX
+- [x] `src/entities/follower.js` — 随从 AI — PR #8 NEEDS_FIX
+- [x] `src/entities/projectile.js` — 投射物 — PR #8
+- [x] `src/rendering/follower-renderer.js` — 随从绘制 — PR #8
+- [x] `src/ui/equipment-panel.js` — 装备面板 — PR #9 NEEDS_FIX
+- [x] `src/ui/skill-bar.js` — 技能栏冷却显示 — PR #9 NEEDS_FIX
+- [ ] 集成验证：游戏完整可玩
 
 ---
 
