@@ -1,0 +1,17 @@
+name: Validate Godot Project
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.2.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Godot Check
+        run: godot --headless --path . --check-only

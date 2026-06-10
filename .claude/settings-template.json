@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(**/*)",
+      "Edit(**/*)",
+      "Read(**/*)",
+      "Glob(**/*)",
+      "Grep(**/*)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(mkdir *)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(rm *)",
+      "Bash(sed *)",
+      "Bash(grep *)",
+      "Bash(wc *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(sleep *)",
+      "Bash(echo *)",
+      "Bash(which *)",
+      "Bash(where *)",
+      "Bash(start *)",
+      "Bash(taskkill *)",
+      "Bash(curl *)",
+      "Bash(unzip *)",
+      "Bash(file *)",
+      "Bash(xxd *)",
+      "Bash(tasklist *)",
+      "Bash(playwright-cli *)",
+      "Bash(powershell *)",
+      "Bash(cmd.exe *)",
+      "Agent(*)",
+      "Skill(*)",
+      "WebSearch(*)",
+      "WebFetch(*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\wangc"
+    ]
+  }
+}

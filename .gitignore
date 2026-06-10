@@ -1,0 +1,40 @@
+# Godot
+.godot/
+*.import
+*.translation
+
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+*.csproj
+*.unityproj
+
+# Unreal
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Screenshots / debug
+screenshot*.png
+game_viewport.png
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Playwright
+.playwright-cli/
+
+# Local settings
+.claude/settings.local.json
+
+# Session state
+production/session-state/
+production/session-logs/
+
+# Temp
+/tmp/
+*.tmp
