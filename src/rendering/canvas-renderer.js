@@ -35,7 +35,8 @@ import { getShakeOffset } from './screen-shake.js';
 // Design resolution constants (re-exported from core/constants.js)
 // ---------------------------------------------------------------------------
 
-export { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
+import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
+export { DESIGN_WIDTH, DESIGN_HEIGHT };
 
 // ---------------------------------------------------------------------------
 // CanvasRenderer
