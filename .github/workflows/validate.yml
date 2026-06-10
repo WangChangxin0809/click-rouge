@@ -1,4 +1,4 @@
-name: Validate Godot Project
+name: Validate JS Project
 
 on:
   pull_request:
@@ -9,9 +9,11 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.2.2
     steps:
       - uses: actions/checkout@v4
-      - name: Godot Check
-        run: godot --headless --path . --check-only
+      - name: Check JS syntax
+        run: |
+          find . -name '*.js' -not -path './node_modules/*' -not -path './.claude/*' | while read file; do
+            node --check "$file" || exit 1
+          done
+          echo "All JS files pass syntax check."

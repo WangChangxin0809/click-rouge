@@ -10,6 +10,12 @@ import { GameLoop } from './core/game-loop.js';
 import { STATE } from './core/game-state.js';
 import { events } from './core/event-bus.js';
 import { CanvasRenderer, DESIGN_WIDTH, DESIGN_HEIGHT } from './rendering/canvas-renderer.js';
+import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
+import { updateCombatSystem } from './systems/combat-system.js';
+import { updateEconomySystem } from './systems/economy-system.js';
+import { updateParticles } from './rendering/fx-renderer.js';
+import { updateShake } from './rendering/screen-shake.js';
+import { initAudio } from './audio/audio-manager.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -61,10 +67,11 @@ function update(dt) {
 
     STATE.elapsedTime += dt;
 
-    // Log elapsed time each second (dev debugging, remove later)
-    if (Math.floor(STATE.elapsedTime) !== Math.floor(STATE.elapsedTime - dt)) {
-        console.log(`[ClickRouge] ${STATE.elapsedTime.toFixed(1)}s | Wave ${STATE.wave} | Kills ${STATE.killCount} | Gold ${STATE.player.gold}`);
-    }
+    updateSpawnSystem(dt);
+    updateCombatSystem();
+    updateEconomySystem(dt);
+    updateParticles(dt);
+    updateShake(dt);
 }
 
 /**
@@ -183,6 +190,9 @@ function startGame() {
     STATE.gameStatus = 'playing';
     STATE.clickQueue = [];
 
+    initSpawnSystem();
+    initAudio();
+
     // Swap screens
     startScreen.classList.add('hidden');
     gameoverScreen.classList.add('hidden');
@@ -191,7 +201,6 @@ function startGame() {
     gameLoop.start();
 
     events.emit('game:started', null);
-    console.log('[ClickRouge] Game started.');
 }
 
 /**
