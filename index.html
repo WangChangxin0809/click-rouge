@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Click Rouge — 点击肉鸽</title>
+    <style>
+        /* === Reset & Base === */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+            color: #e0e0e0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* === Canvas Layer (z-index: 0) === */
+        #game-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            display: block;
+        }
+
+        /* === HUD Overlay Layer (z-index: 10) === */
+        #hud-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Top HUD bar */
+        .hud-top {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-size: 16px;
+        }
+
+        .hud-hp {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hud-hp-label {
+            color: #e94560;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .hud-hp-bar-outer {
+            flex: 1;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 7px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+
+        .hud-hp-bar-inner {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #e94560, #c23152);
+            border-radius: 7px;
+            transition: width 0.25s ease;
+        }
+
+        .hud-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .hud-stat .icon {
+            font-size: 16px;
+        }
+
+        .hud-stat .value {
+            color: #f0c040;
+            font-weight: bold;
+        }
+
+        .hud-divider {
+            width: 1px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Bottom skill bar */
+        .skill-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 12px;
+            padding: 10px 18px;
+        }
+
+        .skill-slot {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .skill-slot .key-hint {
+            position: absolute;
+            bottom: -18px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .skill-slot[data-key] {
+            position: relative;
+        }
+
+        /* === Modal Layer (z-index: 100) === */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .modal-card {
+            background: rgba(22, 22, 38, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 40px 48px;
+            text-align: center;
+            pointer-events: auto;
+            min-width: 320px;
+            max-width: 420px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-card h1 {
+            font-size: 36px;
+            color: #e94560;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .modal-card .subtitle {
+            font-size: 14px;
+            color: #8888a0;
+            margin-bottom: 28px;
+        }
+
+        .modal-card .stats {
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #b0b0c0;
+            line-height: 1.8;
+        }
+
+        .modal-card .stats .stat-highlight {
+            color: #f0c040;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 36px;
+            font-size: 18px;
+            font-family: inherit;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(135deg, #e94560, #c23152);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.12s;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid #f0c040;
+            outline-offset: 2px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Hidden by default */
+        .hidden {
+            display: none !important;
+        }
+
+        /* === Responsive === */
+        @media (max-width: 480px) {
+            .hud-top {
+                font-size: 13px;
+                padding: 6px 10px;
+                gap: 8px;
+            }
+            .skill-slot {
+                width: 46px;
+                height: 46px;
+            }
+            .modal-card {
+                min-width: auto;
+                margin: 0 20px;
+                padding: 28px 24px;
+            }
+            .modal-card h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas layer -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD overlay -->
+    <div id="hud-overlay">
+        <!-- Top HUD -->
+        <div class="hud-top">
+            <div class="hud-hp">
+                <span class="hud-hp-label">HP</span>
+                <div class="hud-hp-bar-outer">
+                    <div class="hud-hp-bar-inner" id="hp-bar-fill"></div>
+                </div>
+                <span id="hp-text" style="font-size:13px;white-space:nowrap;">100/100</span>
+            </div>
+            <span class="hud-divider"></span>
+            <div class="hud-stat">
+                <span class="icon">&#x1FA99;</span>
+                <span class="value" id="gold-value">0</span>
+            </div>
+            <span class="hud-divider"></span>
+            <div class="hud-stat">
+                <span class="icon">&#x2694;</span>
+                <span class="value" id="wave-value">1</span>
+            </div>
+            <span class="hud-divider"></span>
+            <div class="hud-stat">
+                <span>&#x23F1;</span>
+                <span class="value" id="time-value">0:00</span>
+            </div>
+        </div>
+
+        <!-- Skill bar -->
+        <div class="skill-bar">
+            <div class="skill-slot" data-key="1"><span class="key-hint">1</span></div>
+            <div class="skill-slot" data-key="2"><span class="key-hint">2</span></div>
+            <div class="skill-slot" data-key="3"><span class="key-hint">3</span></div>
+            <div class="skill-slot" data-key="4"><span class="key-hint">4</span></div>
+        </div>
+    </div>
+
+    <!-- Modal overlay -->
+    <div id="modal-overlay">
+        <!-- Start screen -->
+        <div class="modal-card" id="start-screen">
+            <h1>Click Rouge</h1>
+            <p class="subtitle">点击肉鸽</p>
+            <button class="btn" id="btn-start">开始游戏</button>
+        </div>
+
+        <!-- Game over screen (hidden by default) -->
+        <div class="modal-card hidden" id="gameover-screen">
+            <h1>游戏结束</h1>
+            <div class="stats">
+                <p>存活时间：<span class="stat-highlight" id="stat-time">0:00</span></p>
+                <p>到达波次：<span class="stat-highlight" id="stat-wave">1</span></p>
+                <p>击杀数量：<span class="stat-highlight" id="stat-kills">0</span></p>
+                <p>获得金币：<span class="stat-highlight" id="stat-gold">0</span></p>
+            </div>
+            <button class="btn" id="btn-restart">重新开始</button>
+        </div>
+    </div>
+
+    <!-- Main game module -->
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
