@@ -20,6 +20,10 @@ Saved/
 # Screenshots / debug
 screenshot*.png
 game_viewport.png
+screenshots/
+
+# Node
+node_modules/
 
 # OS
 Thumbs.db
