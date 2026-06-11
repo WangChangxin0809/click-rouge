@@ -39,6 +39,8 @@ import { LEVELS } from './data/level-config.js';
 import { SKILLS } from './data/skill-data.js';
 import { scaleStats } from './data/level-scaling.js';
 import { createFollower } from './entities/follower.js';
+import { EQUIPMENT } from './data/equipment-data.js';
+import { recalculateStats } from './systems/progression-system.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -301,11 +303,36 @@ function startGame(config = {}) {
     }
     if (config.equipment) {
         const e = config.equipment;
-        if (e.weapon) STATE.player.equipSlots.weapon = { typeId: e.weapon, level: getItemLevel('equip', e.weapon) || 1 };
-        if (e.armor) STATE.player.equipSlots.armor = { typeId: e.armor, level: getItemLevel('equip', e.armor) || 1 };
-        if (e.accessory) STATE.player.equipSlots.accessory = { typeId: e.accessory, level: getItemLevel('equip', e.accessory) || 1 };
+        if (e.weapon) {
+            const def = EQUIPMENT.weapon;
+            const lv = getItemLevel('equip', e.weapon) || 1;
+            STATE.player.equipSlots.weapon = {
+                typeId: e.weapon, level: lv, slot: 'weapon',
+                name: def ? def.name : '武器',
+                stats: def ? scaleStats(def.base, def.perLevel, lv) : {},
+            };
+        }
+        if (e.armor) {
+            const def = EQUIPMENT.armor;
+            const lv = getItemLevel('equip', e.armor) || 1;
+            STATE.player.equipSlots.armor = {
+                typeId: e.armor, level: lv, slot: 'armor',
+                name: def ? def.name : '护甲',
+                stats: def ? scaleStats(def.base, def.perLevel, lv) : {},
+            };
+        }
+        if (e.accessory) {
+            const def = EQUIPMENT.accessory;
+            const lv = getItemLevel('equip', e.accessory) || 1;
+            STATE.player.equipSlots.accessory = {
+                typeId: e.accessory, level: lv, slot: 'accessory',
+                name: def ? def.name : '饰品',
+                stats: def ? scaleStats(def.base, def.perLevel, lv) : {},
+            };
+        }
     }
     initSpawnSystem(); initEconomySystem(); initSkillSystem(); clearProjectiles(); initAudio();
+    recalculateStats();
     document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
     startScreen.classList.add('hidden'); gameoverScreen.classList.add('hidden');
     gameLoop.start();

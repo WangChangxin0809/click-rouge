@@ -94,7 +94,7 @@ export function updateCombatSystem() {
 
     // --- Hit confirmed: calculate damage ---
     const isCrit = rng.nextFloat(0, 1) < STATE.player.critChance;
-    const rawDamage = STATE.player.baseAtk;
+    const rawDamage = STATE.player.atk;
     const damage = rawDamage * (isCrit ? STATE.player.critMult : 1.0);
 
     // Record hit time for flash effect
