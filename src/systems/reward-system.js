@@ -20,7 +20,9 @@ import { rng } from '../core/random.js';
 import { EQUIPMENT } from '../data/equipment-data.js';
 import { SKILLS } from '../data/skill-data.js';
 import { FOLLOWERS } from '../data/follower-data.js';
+import { FOLLOWER_DEFINITIONS } from '../data/follower-definitions.js';
 import { BUFFS } from '../data/buff-data.js';
+import { createFollower } from '../entities/follower.js';
 import { BALANCE } from '../data/balance-config.js';
 import { recalculateStats } from './progression-system.js';
 
@@ -133,29 +135,31 @@ export function applyReward(reward) {
             if (!STATE.player.activeFollowers) {
                 STATE.player.activeFollowers = [];
             }
-            // Check for existing follower of the same type
+            // Check for existing follower of the same typeId (key into FOLLOWER_DEFINITIONS)
             const existingIdx = STATE.player.activeFollowers.findIndex(
-                f => f.id === reward.id
+                f => f.typeId === reward.typeId
             );
             if (existingIdx >= 0) {
-                // Upgrade: increment level
+                // Upgrade: increment level and scale damage/heal
                 const existing = STATE.player.activeFollowers[existingIdx];
                 existing.level = (existing.level || 1) + 1;
-                existing.description = `${reward.description} (等级 ${existing.level})`;
-                // Scale stats with level
-                if (existing.type === 'combat' && existing.stats && existing.stats.damage) {
-                    existing.stats.damage = Math.round(existing.stats.damage * 1.2);
+                if (existing.damage) {
+                    existing.damage = Math.round(existing.damage * 1.2);
+                }
+                if (existing.healAmount) {
+                    existing.healAmount = Math.round(existing.healAmount * 1.2);
                 }
             } else {
                 if (STATE.player.activeFollowers.length < BALANCE.MAX_FOLLOWERS) {
-                    STATE.player.activeFollowers.push({
-                        id: reward.id,
-                        name: reward.name,
-                        description: reward.description,
-                        type: reward.followerType,
-                        stats: { ...reward.stats },
-                        level: 1,
-                    });
+                    const follower = createFollower(
+                        reward.typeId,
+                        FOLLOWER_DEFINITIONS,
+                        STATE.player.activeFollowers.length,
+                        BALANCE.MAX_FOLLOWERS
+                    );
+                    // Augment with level tracking for upgrade system
+                    follower.level = 1;
+                    STATE.player.activeFollowers.push(follower);
                 } else {
                     console.warn('[RewardSystem] Follower slots full, cannot add:', reward.name);
                 }
@@ -371,7 +375,7 @@ function _generateFollower(bossTier, timestamp, index) {
         description: chosen.description,
         type: 'follower',
         tier: bossTier,
-        followerType: chosen.type,
+        typeId: chosen.id,
         stats: { ...chosen.stats },
     };
 }
