@@ -262,6 +262,58 @@ function _handleSelection(reward, cardEl) {
 }
 
 // ---------------------------------------------------------------------------
+// Internal: upgrade text builder
+// ---------------------------------------------------------------------------
+
+/**
+ * Build upgrade text if this reward would upgrade an already-owned entity.
+ *
+ * Checks STATE.player for existing skills/followers/equipment matching
+ * the reward's typeId or slot. Returns null for new entities or buffs.
+ *
+ * @param {Object} reward
+ * @returns {string|null}
+ */
+function _buildUpgradeText(reward) {
+    // Skill upgrade — check if player already owns this skill id
+    if (reward.type === 'skill') {
+        const existing = (STATE.player.activeSkills || []).find(
+            s => s.id === reward.typeId
+        );
+        if (existing) {
+            const currentLv = existing.stack || 1;
+            const nextLv = currentLv + 1;
+            return `升级 Lv.${currentLv}→Lv.${nextLv}`;
+        }
+    }
+
+    // Follower upgrade — check if player already owns this follower typeId
+    if (reward.type === 'follower') {
+        const existing = (STATE.player.activeFollowers || []).find(
+            f => f.typeId === reward.typeId
+        );
+        if (existing) {
+            const currentLv = existing.level || 1;
+            const nextLv = currentLv + 1;
+            return `升级 Lv.${currentLv}→Lv.${nextLv}`;
+        }
+    }
+
+    // Equipment upgrade — check if player has an item in the same slot
+    if (reward.type === 'weapon' || reward.type === 'armor' || reward.type === 'accessory') {
+        const currentEquip = STATE.player.equipSlots?.[reward.slot] || null;
+        if (currentEquip) {
+            const currentTier = currentEquip.tier;
+            const nextTier = reward.tier;
+            return `升级 T${currentTier}→T${nextTier}`;
+        }
+    }
+
+    // No upgrade text for buffs or brand-new entities
+    return null;
+}
+
+// ---------------------------------------------------------------------------
 // Internal: stats formatter
 // ---------------------------------------------------------------------------
 
