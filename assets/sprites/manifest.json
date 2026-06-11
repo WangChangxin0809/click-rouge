@@ -9,11 +9,10 @@
   },
   "bat": {
     "file": "bat/plat_bat_spritesheet.png",
-    "frameW": 95,
-    "frameH": 138,
-    "frames": 4,
-    "fps": 6,
-    "layout": "horizontal"
+    "frameW": 119,
+    "frameH": 118,
+    "frames": 1,
+    "fps": 1
   },
   "ghost": {
     "file": "ghost/plat_ghost_spritesheet.png",
