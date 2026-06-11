@@ -154,7 +154,7 @@ function showScreen(name) {
     if (name === 'main-menu') showMainMenu();
     if (name === 'level-select') showLevelSelect();
     if (name === 'shop-panel') showShopPanel();
-    if (name === 'loadout-panel') showLoadoutPanel(STATE._selectedLevelId);
+    if (name === 'loadout-panel') showLoadoutPanel(STATE._selectedLevelId, STATE._loadoutMode || 'battle');
     if (name === 'settlement-panel') { /* shown by endGame → showSettlement */ }
 }
 
@@ -445,16 +445,15 @@ events.on('menu:navigate', (payload) => {
         settlement: 'settlement-panel',
     };
     const screenId = screenMap[payload.screen] || payload.screen;
+    if (payload.screen === 'loadout') STATE._loadoutMode = 'config';
     showScreen(screenId);
 });
 
-// Level selected — store levelId and navigate to loadout (placeholder)
+// Level selected — store levelId and navigate to loadout (battle prep)
 events.on('level:selected', (payload) => {
     if (!payload || payload.levelId == null) return;
-    console.log('[ClickRouge] Level selected:', payload.levelId);
-    // Store selected level for later use by game start
     STATE._selectedLevelId = payload.levelId;
-    // For now, navigate to loadout placeholder
+    STATE._loadoutMode = 'battle';
     showScreen('loadout-panel');
 });
 

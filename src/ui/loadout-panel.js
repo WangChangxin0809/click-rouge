@@ -156,6 +156,9 @@ let _selectedEquip = { weapon: null, armor: null, accessory: null };
 /** @type {number|null} The levelId passed to showLoadoutPanel */
 let _levelId = null;
 
+/** @type {'battle'|'config'} Current mode */
+let _mode = 'battle';
+
 /** @type {HTMLElement|null} Reference to the #loadout-panel container */
 let _panelEl = null;
 
@@ -187,13 +190,14 @@ export function initLoadoutPanel() {
  *
  * @param {number} levelId - The level the player is about to enter
  */
-export function showLoadoutPanel(levelId) {
+export function showLoadoutPanel(levelId, mode) {
     if (!_panelEl) {
         initLoadoutPanel();
     }
     if (!_panelEl) return;
 
     _levelId = levelId;
+    _mode = mode || 'battle';
 
     // Reset selections to empty
     _selectedSkills = [];
@@ -203,7 +207,7 @@ export function showLoadoutPanel(levelId) {
     _buildPanel();
     _panelEl.classList.add('active');
 
-    events.emit('loadout:panelShown', { levelId });
+    events.emit('loadout:panelShown', { levelId, mode: _mode });
 }
 
 /**
@@ -237,7 +241,9 @@ function _buildPanel() {
     backBtn.textContent = '← 返回';
     backBtn.addEventListener('click', () => {
         _hideLoadoutPanel();
-        events.emit('menu:navigate', { screen: 'levelSelect' });
+        events.emit('menu:navigate', {
+            screen: _mode === 'config' ? 'lobby' : 'levelSelect'
+        });
     });
 
     const title = document.createElement('h2');
@@ -264,15 +270,17 @@ function _buildPanel() {
 
     wrap.appendChild(content);
 
-    // -- Bottom bar -----------------------------------------------------------
-    const bottomBar = document.createElement('div');
-    bottomBar.className = 'loadout-bottom-bar';
-    const startBtn = document.createElement('button');
-    startBtn.className = 'btn loadout-start-btn';
-    startBtn.textContent = '⚔ 开始战斗';
-    startBtn.addEventListener('click', _handleConfirm);
-    bottomBar.appendChild(startBtn);
-    wrap.appendChild(bottomBar);
+    // -- Bottom bar (battle mode only) -------------------------------------
+    if (_mode === 'battle') {
+        const bottomBar = document.createElement('div');
+        bottomBar.className = 'loadout-bottom-bar';
+        const startBtn = document.createElement('button');
+        startBtn.className = 'btn loadout-start-btn';
+        startBtn.textContent = '⚔ 开始战斗';
+        startBtn.addEventListener('click', _handleConfirm);
+        bottomBar.appendChild(startBtn);
+        wrap.appendChild(bottomBar);
+    }
 
     _panelEl.appendChild(wrap);
 }
