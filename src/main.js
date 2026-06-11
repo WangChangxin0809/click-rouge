@@ -29,6 +29,9 @@ import { updateProjectiles, clearProjectiles } from './entities/projectile.js';
 import { addNotification, updateNotificationLog } from './ui/notification-log.js';
 import { ENEMY_TYPES } from './data/enemy-definitions.js';
 import { BOSS_TYPES } from './data/boss-definitions.js';
+import { initMainMenu, showMainMenu } from './ui/main-menu.js';
+import { initLevelSelect, showLevelSelect } from './ui/level-select.js';
+import { loadMeta, getPermanentGold } from './systems/meta-progression.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -116,6 +119,31 @@ function render() {
 }
 
 const gameLoop = new GameLoop(update, render);
+
+// ---------------------------------------------------------------------------
+// Screen navigation
+// ---------------------------------------------------------------------------
+
+/**
+ * Show a named screen, hiding all others.
+ * Delegates content refresh to the corresponding show function.
+ * @param {string} name — screen element ID (e.g. 'main-menu', 'level-select')
+ */
+function showScreen(name) {
+    // Hide all screens
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+    // Show the target screen
+    const el = document.getElementById(name);
+    if (el) el.classList.add('active');
+
+    // Delegate content refresh to the appropriate show function
+    if (name === 'main-menu') showMainMenu();
+    if (name === 'level-select') showLevelSelect();
+    if (name === 'shop-panel') { /* TODO: shop UI */ }
+    if (name === 'loadout-panel') { /* TODO: loadout UI */ }
+    if (name === 'settlement-panel') { /* TODO: settlement UI */ }
+}
 
 // ---------------------------------------------------------------------------
 // HUD DOM update
@@ -354,6 +382,34 @@ events.on('game:triggerGameOver', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Meta / Navigation event listeners
+// ---------------------------------------------------------------------------
+
+// Screen navigation (main menu -> level select -> etc.)
+events.on('menu:navigate', (payload) => {
+    if (!payload || !payload.screen) return;
+    const screenMap = {
+        lobby: 'main-menu',
+        levelSelect: 'level-select',
+        shop: 'shop-panel',
+        loadout: 'loadout-panel',
+        settlement: 'settlement-panel',
+    };
+    const screenId = screenMap[payload.screen] || payload.screen;
+    showScreen(screenId);
+});
+
+// Level selected — store levelId and navigate to loadout (placeholder)
+events.on('level:selected', (payload) => {
+    if (!payload || payload.levelId == null) return;
+    console.log('[ClickRouge] Level selected:', payload.levelId);
+    // Store selected level for later use by game start
+    STATE._selectedLevelId = payload.levelId;
+    // For now, navigate to loadout placeholder
+    showScreen('loadout-panel');
+});
+
+// ---------------------------------------------------------------------------
 // Reward system wiring — real boss defeated → reward selection
 // ---------------------------------------------------------------------------
 
@@ -398,18 +454,29 @@ events.on('reward:trigger', (payload) => {
 });
 
 // ---------------------------------------------------------------------------
-// Initial state
+// Initial state — Meta Phase B: main menu + level select
 // ---------------------------------------------------------------------------
 
-// Ensure start screen is visible, game-over is hidden
-startScreen.classList.remove('hidden');
+// Load meta-progression data (must run before UI init so stats are available)
+loadMeta();
+
+// Initialise navigation UI
+initMainMenu();
+initLevelSelect();
+
+// Hide the old start screen (preserved for backwards compat during transition)
+startScreen.classList.add('hidden');
 gameoverScreen.classList.add('hidden');
 
-// Render initial idle frame
+// Show the main menu as the first screen
+showMainMenu();
+showScreen('main-menu');
+
+// Render initial idle frame (canvas stays in background)
 renderer.clear();
 renderer.render(STATE);
 
-// Preload sprites in background while start screen is showing
+// Preload sprites in background while main menu is showing
 (async () => {
     try {
         const resp = await fetch('assets/sprites/manifest.json');
@@ -423,4 +490,4 @@ renderer.render(STATE);
     }
 })();
 
-console.log('[ClickRouge] Bootstrap complete. Waiting for player to start.');
+console.log('[ClickRouge] Bootstrap complete. Main menu shown.');
