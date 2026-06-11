@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Click Rouge Unit Tests</title>
+<style>
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  h1 {
+    color: #e94560;
+    font-size: 1.8em;
+    margin-bottom: 0.3em;
+  }
+  .subtitle {
+    color: #888;
+    font-size: 0.9em;
+    margin-bottom: 1.5em;
+  }
+  #results {
+    background: #16213e;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85em;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .pass { color: #4ecca3; }
+  .fail { color: #e94560; font-weight: bold; }
+  .summary {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+  .summary.all-pass { background: #0f3460; color: #4ecca3; }
+  .summary.some-fail { background: #3a0d0d; color: #e94560; }
+  .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid #444;
+    border-top-color: #e94560;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <h1>Click Rouge Unit Tests</h1>
+  <p class="subtitle">Open the browser console (F12) for detailed output.</p>
+  <div id="results"><span class="spinner"></span>Running tests...</div>
+
+  <!-- Load test modules in dependency order -->
+  <script type="module" src="unit/enemy-damage.test.js"></script>
+  <script type="module" src="unit/enemy-creation.test.js"></script>
+  <script type="module" src="unit/reward-system.test.js"></script>
+  <script type="module" src="unit/difficulty-system.test.js"></script>
+  <script type="module" src="unit/skill-system.test.js"></script>
+  <script type="module" src="unit/follower-system.test.js"></script>
+
+  <script type="module">
+    // Wait for all modules to load and execute, then show summary
+    // ES modules execute in order, so by the time this script runs,
+    // all test files have added their results to #results.
+
+    // Small delay to let DOM updates settle
+    setTimeout(() => {
+      const resultsEl = document.getElementById('results');
+      const resultLines = resultsEl.querySelectorAll('div');
+
+      let totalPass = 0;
+      let totalFail = 0;
+
+      for (const line of resultLines) {
+        if (line.classList.contains('pass')) {
+          // Parse "passed X/Y" from the text
+          const match = line.textContent.match(/(\d+)\/(\d+)/);
+          if (match) {
+            totalPass += parseInt(match[1], 10);
+            // (match[2] is total, but we sum passes from all pass lines)
+          }
+        }
+        if (line.classList.contains('fail')) {
+          totalFail++;
+        }
+      }
+
+      // Count all test results more carefully
+      let allPass = true;
+      for (const line of resultLines) {
+        if (line.classList.contains('fail')) {
+          allPass = false;
+          break;
+        }
+      }
+
+      const summary = document.createElement('div');
+      summary.className = 'summary ' + (allPass ? 'all-pass' : 'some-fail');
+      summary.textContent = allPass
+        ? 'ALL TESTS PASSED'
+        : 'SOME TESTS FAILED — check console for details';
+      resultsEl.appendChild(summary);
+    }, 200);
+  </script>
+</body>
+</html>
