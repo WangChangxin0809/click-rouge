@@ -346,10 +346,22 @@ function _injectStyles() {
             }
         }
 
+        /* Buy button flash animation */
+        .shop-buy-btn-flash {
+            animation: buyFlash 0.4s ease-out;
+        }
+        @keyframes buyFlash {
+            0%   { background: #4ecca3; box-shadow: 0 0 20px rgba(78, 204, 163, 0.8); transform: scale(1.1); }
+            100% { background: linear-gradient(135deg, #4ecca3, #3aa882); box-shadow: none; transform: scale(1); }
+        }
+
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
             .shop-buy-btn {
                 transition: none;
+            }
+            .shop-buy-btn-flash {
+                animation: none;
             }
             .shop-tab {
                 transition: none;
@@ -462,10 +474,10 @@ function _buildPanelStructure() {
     tabBar.className = 'shop-tabs';
 
     const tabs = [
-        { id: 'stat',     label: '属性强化' }, // 属性强化
-        { id: 'skill',    label: '技能升级' }, // 技能升级
-        { id: 'follower', label: '随从升级' }, // 随从升级
-        { id: 'equip',    label: '装备升级' }, // 装备升级
+        { id: 'stat',     label: '⚔ 属性强化' },                 // ⚔ 属性强化
+        { id: 'skill',    label: '✨ 技能升级' },                 // ✨ 技能升级
+        { id: 'follower', label: '\u{1F6E1} 随从升级' },          // 🛡 随从升级
+        { id: 'equip',    label: '⚒ 装备升级' },                 // ⚒ 装备升级
     ];
 
     for (const tab of tabs) {
@@ -530,7 +542,7 @@ function _bindEventDelegation() {
         if (buyBtn) {
             const type = buyBtn.getAttribute('data-buy');
             const id   = buyBtn.getAttribute('data-buy-id');
-            _handlePurchase(type, id);
+            _handlePurchase(type, id, /** @type {HTMLElement} */ (buyBtn));
             return;
         }
     });
@@ -755,8 +767,9 @@ function _renderEquipContent(container) {
  * Handle a purchase click (via event delegation).
  * @param {string} type — 'stat', 'skill', 'follower', or 'equip'
  * @param {string} id   — stat key, skill/follower/equip typeId
+ * @param {HTMLElement} [btnEl] — the button element (for flash feedback)
  */
-function _handlePurchase(type, id) {
+function _handlePurchase(type, id, btnEl) {
     let success = false;
 
     if (type === 'stat') {
@@ -766,6 +779,12 @@ function _handlePurchase(type, id) {
     }
 
     if (success) {
+        // Flash the clicked buy button for visual feedback
+        if (btnEl) {
+            btnEl.classList.add('shop-buy-btn-flash');
+            setTimeout(() => btnEl.classList.remove('shop-buy-btn-flash'), 400);
+        }
+
         // Refresh all displays (coin + affected tab)
         _updateCoinDisplay();
         _refreshContent(_activeTab);
