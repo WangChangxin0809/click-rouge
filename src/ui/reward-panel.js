@@ -182,12 +182,13 @@ function _buildCard(reward, index, prefersReducedMotion) {
     typeLabel.textContent = TYPE_LABELS[reward.type] || reward.type;
     card.appendChild(typeLabel);
 
-    // Tier quality badge — T1 white, T2 blue, T3 purple, T4 gold
-    const tier = reward.tier || 1;
-    const tierLabel = document.createElement('div');
-    tierLabel.className = `reward-card-tier reward-card-tier-${tier}`;
-    tierLabel.textContent = `T${tier}`;
-    card.appendChild(tierLabel);
+    // Unified level badge — Lv.1 white, Lv.2 blue, Lv.3 purple, Lv.4+ gold
+    const level = reward.tier || reward.level || 1;
+    const levelClamped = Math.min(level, 4);
+    const levelLabel = document.createElement('div');
+    levelLabel.className = `reward-card-level reward-card-level-${levelClamped}`;
+    levelLabel.textContent = `Lv.${level}`;
+    card.appendChild(levelLabel);
 
     // Upgrade info — if this skill/follower is already owned, show "升级 Lv.X -> Lv.X+1"
     const upgradeText = _buildUpgradeText(reward);
@@ -303,9 +304,9 @@ function _buildUpgradeText(reward) {
     if (reward.type === 'weapon' || reward.type === 'armor' || reward.type === 'accessory') {
         const currentEquip = STATE.player.equipSlots?.[reward.slot] || null;
         if (currentEquip) {
-            const currentTier = currentEquip.tier;
-            const nextTier = reward.tier;
-            return `升级 T${currentTier}→T${nextTier}`;
+            const currentLv = currentEquip.tier || 1;
+            const nextLv = reward.tier || 1;
+            return `升级 Lv.${currentLv}→Lv.${nextLv}`;
         }
     }
 

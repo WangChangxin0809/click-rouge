@@ -92,6 +92,7 @@ export function updateEquipmentPanel() {
         const iconEl = row.querySelector('.equip-icon');
         const nameEl = row.querySelector('.equip-name');
         const statsEl = row.querySelector('.equip-stats');
+        const levelEl = row.querySelector('.equip-level');
 
         if (item) {
             row.classList.add('equip-row-filled');
@@ -99,12 +100,24 @@ export function updateEquipmentPanel() {
             if (iconEl) iconEl.textContent = _iconForItem(item);
             if (nameEl) nameEl.textContent = item.name || config.label;
             if (statsEl) statsEl.textContent = _formatBriefStats(item.stats);
+            // Level badge — show Lv.N based on item tier
+            const lv = item.tier || 1;
+            const lvClamped = Math.min(lv, 4);
+            if (levelEl) {
+                levelEl.textContent = `Lv.${lv}`;
+                levelEl.className = `equip-level equip-level-${lvClamped}`;
+                levelEl.style.display = '';
+            }
         } else {
             row.classList.add('equip-row-empty');
             row.classList.remove('equip-row-filled');
             if (iconEl) iconEl.textContent = config.emptyIcon;
             if (nameEl) nameEl.textContent = '空';
             if (statsEl) statsEl.textContent = '';
+            if (levelEl) {
+                levelEl.textContent = '';
+                levelEl.style.display = 'none';
+            }
         }
     }
 }
@@ -140,6 +153,10 @@ function _buildPanelStructure(panel) {
         const stats = document.createElement('span');
         stats.className = 'equip-stats';
         row.appendChild(stats);
+
+        const level = document.createElement('span');
+        level.className = 'equip-level';
+        row.appendChild(level);
 
         panel.appendChild(row);
     }

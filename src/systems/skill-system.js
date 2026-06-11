@@ -67,6 +67,8 @@ export function updateSkillSystem(dt) {
         if (skill._cooldownRemaining > 0) {
             skill._cooldownRemaining = Math.max(0, skill._cooldownRemaining - dt);
         }
+        // Reset auto-cast frame guard
+        skill._autoCastGuard = false;
     }
 
     // --- Manage active effects ---
@@ -111,8 +113,8 @@ export function activateSkill(slotIndex) {
     const skill = skills[idx];
     if (!skill) return;
 
-    // Check cooldown
-    if (skill._cooldownRemaining > 0) return;
+    // Check cooldown — use || 0 guard because reward-added skills may lack the field
+    if ((skill._cooldownRemaining || 0) > 0) return;
 
     // Look up skill definition
     const def = SKILL_DEFINITIONS[skill.typeId];
@@ -177,6 +179,9 @@ export function updateAutoCast(dt) {
         const skill = skills[i];
         if (!skill) continue;
         if ((skill._cooldownRemaining || 0) <= 0) {
+            // Prevent same-frame double-activation (guard clears at top of updateSkillSystem)
+            if (skill._autoCastGuard) continue;
+            skill._autoCastGuard = true;
             activateSkill(i + 1); // convert 0-based index to 1-based slot
         }
     }
