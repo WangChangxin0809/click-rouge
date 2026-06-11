@@ -1,161 +1,80 @@
 # Click Rouge 开发计划
 
-> 最后更新：2026-06-10
-> 状态：Phase 5+6 审查修复中（PRs #7 #8 #9 待 fix）
-> 状态：Phase 4 进行中（Boss 已合入，奖励系统审查中）
+> 最后更新：2026-06-11
+> 状态：Phase 7 完成，准备 Phase 8
 
 ---
 
 ## 前置修复
-
 - [x] technical-preferences.md → Web/Canvas/JS 规范
 - [x] .github/workflows/validate.yml → JS 语法检查
-- [ ] CLAUDE.md → 更新 agent 路由表（等所有 specialist 确定后）
-
----
+- [ ] CLAUDE.md → 更新 agent 路由表
 
 ## 架构文档
-
 - [x] ADR-001: Canvas 2D Rendering
 - [x] ADR-002: EventBus Architecture
 - [x] ADR-003: Game State Schema
-- [ ] ADR-004: UI Architecture (Canvas + DOM overlay)
-- [ ] ADR-005: Module Loading (ES Modules, no bundler)
-- [ ] ADR-006: Procedural Audio (Web Audio API)
-- [ ] ADR-007: Test Strategy (browser-based assertion tests)
+- [ ] ADR-004-007: 待补充
 
 ---
 
-## Phase 1: 基础框架 ✅
+## Phase 1-4: 核心游戏循环 ✅
+- [x] Phase 1: 核心引擎（game-loop, event-bus, game-state, canvas-renderer, random, object-pool）
+- [x] Phase 2: 敌人与战斗（enemy, spawn, combat, economy, renderers, audio）
+- [x] Phase 3: 玩家受伤 + HUD + 难度曲线 + 伤害数字
+- [x] Phase 4: Boss 系统 + 奖励面板 + 真实数据替换
 
-**目标**: Canvas 渲染 + 游戏循环 + 状态管理 + 输入处理
+## Phase 5+6: 奖励数据 + 技能/随从系统 ✅
+- [x] 数据表：12 件装备、6 种技能、4 种随从、6 种被动、平衡常量
+- [x] progression-system：属性聚合
+- [x] skill-system：6 种技能（雷霆/冰冻/狂暴/治疗/毒刃/淘金）+ 冷却管理
+- [x] follower：4 种随从 AI（骑士/弓箭手/治疗精灵/金币磁铁）+ 投射物
+- [x] equipment-panel + skill-bar UI
+- [x] 审查修复：awardGold、stat compounding、layout 解耦、error fix
 
-- [x] `src/core/event-bus.js` — 发布订阅 EventBus
-- [x] `src/core/game-loop.js` — rAF 游戏循环 + FPS
-- [x] `src/core/game-state.js` — 中央状态对象 + reset
-- [x] `src/core/random.js` — 种子随机数（Mulberry32）
-- [x] `src/core/object-pool.js` — 通用对象池
-- [x] `src/rendering/canvas-renderer.js` — Canvas 2D 封装（1920x1080 设计分辨率）
-- [x] `index.html` — 入口页面（canvas + DOM 层）
-- [x] `src/main.js` — 启动引导
-- [ ] 验证：浏览器打开 index.html，渲染测试方块，FPS 显示正常
-
----
-
-## Phase 2: 敌人与战斗 ✅
-
-- [x] `src/entities/enemy.js` — 敌人实体逻辑（创建/更新/伤害，纯函数）
-- [x] `src/data/enemy-definitions.js` — 5 种敌人类型数据表
-- [x] `src/systems/spawn-system.js` — 敌人生成 + 波次管理（加权随机，波次门槛）
-- [x] `src/systems/combat-system.js` — 点击伤害计算（最近目标，暴击判定）
-- [x] `src/systems/economy-system.js` — 金币变化检测
-- [x] `src/rendering/enemy-renderer.js` — 敌人绘制（身体/眼睛/血条/受击闪烁）
-- [x] `src/rendering/fx-renderer.js` — 粒子系统（击打/死亡/暴击爆发，对象池）
-- [x] `src/rendering/screen-shake.js` — 屏幕震动（衰减正弦波）
-- [x] `src/audio/audio-manager.js` — Web Audio 程序化音效
-- [ ] 验证：浏览器打开 index.html，点击击杀敌人，查看特效和音效
+## Phase 7: 表现力打磨 ✅
+- [x] VFX：雷霆/冰冻/治疗/中毒粒子、屏幕闪白 — PR #10
+- [x] notification-log：战斗通知日志 — PR #11
+- [x] canvas-renderer：背景渐变、屏幕闪白覆盖层
 
 ---
 
-## Phase 3: 玩家受伤 + HUD ✅
+## Phase 8: 平衡 + 测试 + 试玩
 
-- [x] `src/systems/difficulty-system.js` — 分段线性难度曲线（1.0x→5.0x，7 分钟封顶）
-- [x] `src/ui/damage-numbers.js` — CSS 动画浮动伤害数字（普通/暴击/金币/Miss）
-- [x] `main.js` 玩家死亡检测 — HP≤0 触发 game over + 屏幕震动
-- [x] HUD（HP/金币/波次/计时）已在 index.html + main.js 中实现
-- [ ] 验证：浏览器试玩，验证难度曲线和死亡流程
-
----
-
-## Phase 4: Boss 系统 ✅
-- [x] `src/entities/boss.js` — 3 种 Boss 行为模式（charge/summon/zigzag）
-- [x] `src/data/boss-definitions.js` — 3 种 Boss 类型 + tier 分级
-- [x] spawn-system 集成 — Boss 定时生成，难度缩放，事件路由
-- [x] `src/ui/reward-panel.js` — N 选 1 奖励面板
-- [x] `src/systems/reward-system.js` — 奖励生成逻辑（已从桩→真实数据）
-- [ ] 验证：Boss 出现→击杀→选奖励→继续游戏
-
-## Phase 5: 完整奖励数据（审查修复中 — PRs #7 #8 #9）
-- [x] `src/data/equipment-data.js` — 12 件装备（4 tier × 3 slot）
-- [x] `src/data/skill-data.js` — 6 种主动技能
-- [x] `src/data/follower-data.js` — 4 种随从
-- [x] `src/data/buff-data.js` — 6 种被动增益
-- [x] `src/data/balance-config.js` — 集中数值常量
-- [x] `src/systems/progression-system.js` — 属性聚合
-- [ ] `src/systems/skill-system.js` — 技能冷却 + 激活（PR #8 NEEDS_FIX）
-- [ ] `src/entities/follower.js` — 随从 AI（PR #8 NEEDS_FIX）
-- [ ] `src/ui/equipment-panel.js` — 装备面板（PR #9 NEEDS_FIX）
-- [ ] `src/ui/skill-bar.js` — 技能栏冷却显示（PR #9 NEEDS_FIX）
-
-## Phase 6: 技能/随从渲染
-
-- [ ] `src/entities/projectile.js` — 投射物
-- [ ] `src/rendering/follower-renderer.js` — 随从绘制
-- [ ] 集成到 main.js + canvas-renderer
-
----
-
-## Phase 5+6: 奖励数据 + 技能/随从系统（审查修复中）
-
-- [x] `src/data/equipment-data.js` — 12 件装备（4 tier × 3 slot）— PR #7
-- [x] `src/data/skill-data.js` — 6 种技能定义 — PR #8
-- [x] `src/data/follower-data.js` — 4 种随从定义 — PR #8
-- [x] `src/data/buff-data.js` — 6 种被动增益 — PR #7
-- [x] `src/data/balance-config.js` — 集中数值常量 — PR #7
-- [x] `src/systems/progression-system.js` — 属性聚合 — PR #7 NEEDS_FIX
-- [x] `src/systems/skill-system.js` — 技能冷却 + 激活 — PR #8 NEEDS_FIX
-- [x] `src/entities/follower.js` — 随从 AI — PR #8 NEEDS_FIX
-- [x] `src/entities/projectile.js` — 投射物 — PR #8
-- [x] `src/rendering/follower-renderer.js` — 随从绘制 — PR #8
-- [x] `src/ui/equipment-panel.js` — 装备面板 — PR #9 NEEDS_FIX
-- [x] `src/ui/skill-bar.js` — 技能栏冷却显示 — PR #9 NEEDS_FIX
-- [ ] 集成验证：游戏完整可玩
-
----
-
-## Phase 7: 表现力打磨
-
-**目标**: 完整 VFX + 音效 + 动画
-
-- [ ] `src/rendering/fx-renderer.js` 完善 — 多种粒子效果
-- [ ] `src/audio/sfx-hits.js` — 击中音效
-- [ ] `src/audio/sfx-death.js` — 死亡音效
-- [ ] `src/audio/sfx-boss.js` — Boss 音效
-- [ ] `src/audio/sfx-ui.js` — UI 音效
-- [ ] `src/ui/damage-numbers.js` 完善 — CSS 动画
-- [ ] `src/ui/notification-log.js` — 战斗日志
-- [ ] 验证：所有操作都有视听反馈，60fps 稳定
-
----
-
-## Phase 8: 平衡 + 测试
-
-**目标**: 难度平滑 → 数值平衡 → 单元测试 → 性能达标
-
+- [ ] 试玩验证：完整游戏循环（开始→击杀→Boss→奖励→成长→死亡→重开）
+- [ ] 数值平衡调优（balance-config.js）
+- [ ] 难度曲线验证
 - [ ] `tests/unit/combat-system.test.js`
 - [ ] `tests/unit/spawn-system.test.js`
 - [ ] `tests/unit/reward-system.test.js`
 - [ ] `tests/unit/progression-system.test.js`
-- [ ] `tests/unit/economy-system.test.js`
-- [ ] 难度曲线调优（`balance-config.js`）
-- [ ] 性能分析：30 分钟游戏 < 256MB，60fps 稳定
-- [ ] 验证：所有测试通过，试玩 15 分钟无 bug
+- [ ] 性能分析：30 分钟 < 256MB，60fps 稳定
 
 ---
 
 ## 资源获取（AI 生成）
-
-- [ ] 美术素材 — AI 生成精灵图 / 或纯色几何体 + 粒子
-- [ ] 音效 — Web Audio API 程序化生成
-- [ ] 字体 — 系统默认字体或 Google Fonts
-
----
+- [x] 音效 — Web Audio API 程序化生成（hit/crit/death/gold/boss/thunder/freeze/heal/UI）
+- [x] 视觉效果 — 纯色几何体 + 粒子系统
+- [ ] 字体 — 系统默认字体栈
 
 ## 待定 / 可扩展
-
 - [ ] 存档系统（localStorage）
 - [ ] 成就系统
 - [ ] 排行榜
-- [ ] 关卡/地图变化
-- [ ] 更多 Boss 类型
+- [ ] 更多 Boss/敌人类型
 - [ ] 更多奖励类型
+
+## PR 总览
+| # | 内容 | 状态 |
+|---|------|------|
+| 1 | RNG + ObjectPool | MERGED |
+| 2 | entry page | CLOSED |
+| 3 | enemy entity | MERGED |
+| 4 | difficulty + damage numbers | MERGED |
+| 5 | reward system | CLOSED |
+| 6 | boss system | CLOSED |
+| 7 | reward data + progression | MERGED |
+| 8 | skill + follower | MERGED |
+| 9 | equipment + skill bar UI | MERGED |
+| 10 | VFX polish | MERGED |
+| 11 | notification log | CLOSED |
