@@ -151,9 +151,15 @@ export function activateSkill(slotIndex) {
       return;
   }
 
-  // Start cooldown
-  skill._cooldownRemaining = def.cooldown;
-  skill._cooldownTotal = def.cooldown;
+  // Start cooldown — use scaled.cooldown if the skill definition provides
+  // one (e.g. freeze), otherwise fall back to def.cooldown.
+  // Safety clamp: cooldown must be at least freezeDuration + 1 so no
+  // skill can achieve permanent stun-lock through level scaling.
+  const rawCooldown = scaled.cooldown ?? def.cooldown;
+  const minCooldown = (scaled.freezeDuration || 0) + 1;
+  const effectiveCooldown = Math.max(rawCooldown, minCooldown);
+  skill._cooldownRemaining = effectiveCooldown;
+  skill._cooldownTotal = effectiveCooldown;
 
   events.emit('skill:activated', { slot: slotIndex, typeId: skill.typeId, name: def.label });
 }

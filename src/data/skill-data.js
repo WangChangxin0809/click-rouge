@@ -49,8 +49,11 @@ export const SKILLS = {
     cooldown: 8,
     duration: 0,
     effectType: 'freeze',
-    base: { freezeDuration: 2 },
-    perLevel: { freezeDuration: 0.5 },
+    // Bugfix: freezeDuration must stay constant (never grow beyond cooldown-1).
+    // Upgrade benefit: cooldown decreases by 0.5s per level.
+    // base.cooldown is the starting CD; perLevel.cooldown reduces it each level.
+    base: { freezeDuration: 2, cooldown: 8 },
+    perLevel: { freezeDuration: 0, cooldown: -0.5 },
   },
 
   berserk: {
