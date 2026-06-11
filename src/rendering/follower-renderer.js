@@ -20,7 +20,7 @@ import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
 import { STATE } from '../core/game-state.js';
 
 /** Vertical position for the follower row (from bottom of screen) */
-const FOLLOWER_ROW_Y = DESIGN_HEIGHT - 60;
+const FOLLOWER_ROW_Y = DESIGN_HEIGHT - 140;
 
 /** Horizontal spacing between followers */
 const FOLLOWER_SPACING = 90;
