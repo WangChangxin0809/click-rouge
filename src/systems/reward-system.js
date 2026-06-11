@@ -380,29 +380,36 @@ function _generateSkill(bossTier, timestamp, index) {
   const activeSkills = STATE.player.activeSkills || [];
   const ownedIds = activeSkills.map(s => s.typeId);
   const allSkillIds = Object.keys(SKILLS);
+  const slotsFull = activeSkills.length >= BALANCE.MAX_SKILL_SLOTS;
 
   // Tier-based unlock: T1 has first 3, T2+ has all 6
   const unlockedIds = bossTier >= 2
     ? allSkillIds
     : allSkillIds.slice(0, 3);
 
-  // If all slots are full and all unlocked skills are already owned
-  if (activeSkills.length >= BALANCE.MAX_SKILL_SLOTS) {
-    const hasNew = unlockedIds.some(id => !ownedIds.includes(id));
-    if (!hasNew) {
-      // All skills owned and slots full — offer upgrade for any owned
-    }
-  }
-
-  // Prefer unowned skills
-  const unowned = unlockedIds.filter(id => !ownedIds.includes(id));
   let chosenId;
-  if (unowned.length > 0) {
-    chosenId = rng.pickOne(unowned);
+
+  if (slotsFull) {
+    // Bugfix: when skill slots are full, only offer upgrades for already-owned
+    // skills. Never offer a new skill type that would be rejected on apply.
+    const upgradePool = unlockedIds.filter(id => ownedIds.includes(id));
+    if (upgradePool.length > 0) {
+      chosenId = rng.pickOne(upgradePool);
+    } else {
+      // No owned unlocked skill to upgrade — fallback to any owned skill
+      const allOwned = allSkillIds.filter(id => ownedIds.includes(id));
+      chosenId = allOwned.length > 0 ? rng.pickOne(allOwned) : rng.pickOne(allSkillIds);
+    }
   } else {
-    // All unlocked skills owned — offer upgrade for a random owned one
-    const owned = unlockedIds.filter(id => ownedIds.includes(id));
-    chosenId = owned.length > 0 ? rng.pickOne(owned) : rng.pickOne(allSkillIds);
+    // Slots available — prefer unowned skills (new types)
+    const unowned = unlockedIds.filter(id => !ownedIds.includes(id));
+    if (unowned.length > 0) {
+      chosenId = rng.pickOne(unowned);
+    } else {
+      // All unlocked skills owned — offer upgrade for a random owned one
+      const owned = unlockedIds.filter(id => ownedIds.includes(id));
+      chosenId = owned.length > 0 ? rng.pickOne(owned) : rng.pickOne(allSkillIds);
+    }
   }
 
   const def = SKILLS[chosenId];
