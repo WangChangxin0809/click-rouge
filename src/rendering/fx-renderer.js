@@ -64,16 +64,22 @@ const _pool = new ObjectPool(
         life: 0,
         maxLife: 0,
         color: '#ffffff',
+        endColor: null,         // optional: fade from color → endColor over life
         size: 3,
         active: false,
+        trailX: 0, trailY: 0,    // previous position for trail effect
+        hasTrail: false,         // whether trail rendering is enabled
     }),
     /* reset   */ (p) => {
         p.x = 0; p.y = 0;
         p.vx = 0; p.vy = 0;
         p.life = 0; p.maxLife = 0;
         p.color = '#ffffff';
+        p.endColor = null;
         p.size = 3;
         p.active = false;
+        p.trailX = 0; p.trailY = 0;
+        p.hasTrail = false;
     },
     /* prewarm */ 300,
 );
@@ -103,13 +109,17 @@ export function createParticle(x, y, config) {
     const speedMax  = (config.speed && config.speed[1] != null) ? config.speed[1] : 200;
     const life      = config.life != null ? config.life : 0.5;
     const color     = config.color || '#ffffff';
+    const endColor  = config.endColor || null;     // optional fade target
     const sizeMin   = (config.size && config.size[0] != null) ? config.size[0] : 2;
     const sizeMax   = (config.size && config.size[1] != null) ? config.size[1] : 5;
+    const hasTrail  = config.hasTrail === true;     // enable motion trail
 
     for (let i = 0; i < count; i++) {
         const p = _pool.acquire();
         p.x = x;
         p.y = y;
+        p.trailX = x;  // start trail at spawn point
+        p.trailY = y;
 
         const angle = rng.nextFloat(0, Math.PI * 2);
         const speed = rng.nextFloat(speedMin, speedMax);
@@ -119,8 +129,10 @@ export function createParticle(x, y, config) {
         p.maxLife = life;
         p.life    = life;
         p.color   = color;
+        p.endColor = endColor;
         p.size    = rng.nextFloat(sizeMin, sizeMax);
         p.active  = true;
+        p.hasTrail = hasTrail;
 
         STATE.particles.push(p);
     }
@@ -147,6 +159,11 @@ export function updateParticles(dt) {
             _pool.release(p);
             particles.splice(i, 1);
         } else {
+            // Save previous position for trail rendering
+            if (p.hasTrail) {
+                p.trailX = p.x;
+                p.trailY = p.y;
+            }
             p.x += p.vx * dt;
             p.y += p.vy * dt;
         }
@@ -172,12 +189,42 @@ export function renderParticles(ctx, particles) {
         const alpha = p.maxLife > 0 ? p.life / p.maxLife : 0;
         if (alpha <= 0) continue;
 
+        // Color gradient interpolation if endColor is set
+        let drawColor = p.color;
+        if (p.endColor) {
+            drawColor = _interpolateColor(p.color, p.endColor, 1 - alpha);
+        }
+
         ctx.save();
+
+        // Motion trail: draw a fading line from previous position
+        if (p.hasTrail && (p.trailX !== p.x || p.trailY !== p.y)) {
+            const trailAlpha = alpha * 0.4;
+            ctx.globalAlpha = trailAlpha;
+            ctx.strokeStyle = drawColor;
+            ctx.lineWidth = p.size * 0.7;
+            ctx.beginPath();
+            ctx.moveTo(p.trailX, p.trailY);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+        }
+
+        // Main particle body
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = p.color;
+        ctx.fillStyle = drawColor;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+
+        // Bright core for larger particles (adds visual punch)
+        if (p.size >= 4 && alpha > 0.3) {
+            ctx.globalAlpha = alpha * 0.5;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         ctx.restore();
     }
 }
@@ -194,11 +241,13 @@ export function renderParticles(ctx, particles) {
  */
 export function burstHit(x, y) {
     createParticle(x, y, {
-        count: rng.nextInt(10, 15),
+        count: rng.nextInt(12, 18),
         speed: [70, 200],
-        life:  0.25,
-        color: '#ffdd44',
-        size:  [1.5, 3.5],
+        life:  0.3,
+        color: '#ffffff',
+        endColor: '#ffdd44',    // fade white → yellow → transparent
+        size:  [1.5, 4],
+        hasTrail: true,
     });
 }
 
@@ -212,12 +261,15 @@ export function burstHit(x, y) {
  * @param {string} [color='#ff4444'] — Fallback colour if none provided
  */
 export function burstDeath(x, y, color) {
+    const baseColor = color || '#ff4444';
     createParticle(x, y, {
-        count: rng.nextInt(20, 30),
-        speed: [80, 280],
-        life:  0.55,
-        color: color || '#ff4444',
-        size:  [2.5, 6],
+        count: rng.nextInt(25, 35),
+        speed: [80, 300],
+        life:  0.6,
+        color: '#ffffff',
+        endColor: baseColor,    // flash white → enemy color → fade
+        size:  [2.5, 7],
+        hasTrail: true,
     });
 }
 
@@ -229,11 +281,13 @@ export function burstDeath(x, y, color) {
  */
 export function burstCrit(x, y) {
     createParticle(x, y, {
-        count: rng.nextInt(25, 35),
-        speed: [100, 320],
-        life:  0.45,
-        color: '#ff8800',
-        size:  [3, 8],
+        count: rng.nextInt(30, 42),
+        speed: [120, 380],
+        life:  0.5,
+        color: '#ffffff',
+        endColor: '#ff4400',    // white → bright orange → dark red fade
+        size:  [4, 10],
+        hasTrail: true,
     });
 }
 
@@ -392,6 +446,31 @@ export function burstPoison(x, y) {
 
         STATE.particles.push(p);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Helper utilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Interpolate between two hex colours.
+ * @param {string} hex1 — Start colour (e.g. '#ffffff')
+ * @param {string} hex2 — End colour (e.g. '#ff4400')
+ * @param {number} t — Blend factor (0 = hex1, 1 = hex2)
+ * @returns {string} CSS rgb(...) string
+ * @private
+ */
+function _interpolateColor(hex1, hex2, t) {
+    const r1 = parseInt(hex1.slice(1, 3), 16);
+    const g1 = parseInt(hex1.slice(3, 5), 16);
+    const b1 = parseInt(hex1.slice(5, 7), 16);
+    const r2 = parseInt(hex2.slice(1, 3), 16);
+    const g2 = parseInt(hex2.slice(3, 5), 16);
+    const b2 = parseInt(hex2.slice(5, 7), 16);
+    const r = Math.round(r1 + (r2 - r1) * t);
+    const g = Math.round(g1 + (g2 - g1) * t);
+    const b = Math.round(b1 + (b2 - b1) * t);
+    return `rgb(${r},${g},${b})`;
 }
 
 // ---------------------------------------------------------------------------

@@ -151,9 +151,10 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            background: rgba(5, 5, 15, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 10px;
             padding: 8px 16px;
             font-size: 16px;
@@ -221,9 +222,10 @@
             transform: translateX(-50%);
             display: flex;
             gap: 12px;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            background: rgba(5, 5, 15, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             padding: 10px 18px;
             pointer-events: auto;
@@ -260,9 +262,11 @@
 
         /* Skill slot — filled state */
         .skill-slot-filled {
-            border-color: rgba(78, 204, 163, 0.6);
+            border-color: rgba(78, 204, 163, 0.7);
             background: rgba(78, 204, 163, 0.12);
-            box-shadow: 0 0 12px rgba(78, 204, 163, 0.15);
+            box-shadow:
+                0 0 14px rgba(78, 204, 163, 0.3),
+                inset 0 0 10px rgba(78, 204, 163, 0.06);
         }
 
         /* Skill slot — empty state */
@@ -419,11 +423,29 @@
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
         }
 
+        /* Title glow animation */
+        @keyframes titleGlow {
+            0%, 100% {
+                text-shadow:
+                    0 0 10px rgba(233, 69, 96, 0.5),
+                    0 0 20px rgba(233, 69, 96, 0.3),
+                    0 0 40px rgba(233, 69, 96, 0.15);
+            }
+            50% {
+                text-shadow:
+                    0 0 18px rgba(233, 69, 96, 0.8),
+                    0 0 35px rgba(233, 69, 96, 0.5),
+                    0 0 65px rgba(233, 69, 96, 0.3),
+                    0 0 90px rgba(233, 69, 96, 0.12);
+            }
+        }
+
         .modal-card h1 {
             font-size: 36px;
             color: #e94560;
             margin-bottom: 8px;
             letter-spacing: 2px;
+            animation: titleGlow 2.5s ease-in-out infinite;
         }
 
         .modal-card .subtitle {
