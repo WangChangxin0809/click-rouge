@@ -14,7 +14,7 @@ import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
 import { updateDifficulty } from './systems/difficulty-system.js';
 import { updateCombatSystem } from './systems/combat-system.js';
 import { initEconomySystem, updateEconomySystem } from './systems/economy-system.js';
-import { updateParticles, burstHit, burstDeath, burstCrit } from './rendering/fx-renderer.js';
+import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstHeal, triggerScreenFlash, updateScreenFlash } from './rendering/fx-renderer.js';
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
@@ -97,6 +97,7 @@ function update(dt) {
     updateEconomySystem(dt);
     updateParticles(dt);
     updateShake(dt);
+    updateScreenFlash(dt);
 }
 
 /**
@@ -309,6 +310,25 @@ events.on('click:miss', (payload) => {
 // Player damage feedback — screen shake on hit
 events.on('player:damaged', (_payload) => {
     triggerShake(6, 0.15);
+});
+
+// Skill VFX — thunder strike: lightning burst + yellow flash
+events.on('skill:thunder', (_payload) => {
+    // Burst from the centre of the design-resolution screen
+    burstThunder(960, 540);
+    triggerScreenFlash('#ffff00', 0.25, 0.15);
+});
+
+// Boss spawn — screen flash red + big shake for dramatic entrance
+events.on('boss:spawned', (_payload) => {
+    triggerScreenFlash('#ff2222', 0.35, 0.25);
+    triggerShake(12, 0.3);
+});
+
+// Player healed — green rising particles + soft green flash
+events.on('player:healed', (_payload) => {
+    burstHeal(960, 540);
+    triggerScreenFlash('#44ff88', 0.15, 0.3);
 });
 
 // Skill activation from keyboard hotkeys
