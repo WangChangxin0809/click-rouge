@@ -69,7 +69,7 @@ const STAT_AMOUNTS = {
 
 const DEFAULT_META = {
     version: 1,
-    permanentGold: 0,
+    permanentGold: 5000,
     unlockedLevels: [1],
     completedLevels: [],
     statUpgrades: {
@@ -80,7 +80,7 @@ const DEFAULT_META = {
         goldMult: 0,
         atkSpeed: 0,
     },
-    ownedSkills: {},
+    ownedSkills: { thunder_strike: 1 },
     ownedFollowers: {},
     ownedEquip: {},
     totalRuns: 0,
