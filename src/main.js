@@ -25,6 +25,7 @@ import { updateEquipmentPanel } from './ui/equipment-panel.js';
 import { initSkillSystem, updateSkillSystem, activateSkill } from './systems/skill-system.js';
 import { updateAllFollowers } from './entities/follower.js';
 import { updateProjectiles, clearProjectiles } from './entities/projectile.js';
+import { addNotification, updateNotificationLog } from './ui/notification-log.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -98,6 +99,7 @@ function update(dt) {
     updateParticles(dt);
     updateShake(dt);
     updateScreenFlash(dt);
+    updateNotificationLog(dt);
 }
 
 /**
@@ -311,6 +313,13 @@ events.on('click:miss', (payload) => {
 events.on('player:damaged', (_payload) => {
     triggerShake(6, 0.15);
 });
+
+// Notification log events
+events.on('game:started', () => addNotification('游戏开始', 'system'));
+events.on('wave:start', (p) => addNotification(`第 ${p.wave} 波`, 'system'));
+events.on('enemy:spawned', (e) => { if (e.isBoss) addNotification(`${e.name || 'Boss'} 出现了！`, 'boss'); });
+events.on('boss:died', (boss) => addNotification(`${boss.name || 'Boss'} 被击败！`, 'reward'));
+events.on('skill:activated', (p) => addNotification(`${p.name}！`, 'skill'));
 
 // Skill VFX — thunder strike: lightning burst + yellow flash
 events.on('skill:thunder', (_payload) => {
