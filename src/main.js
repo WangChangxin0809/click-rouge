@@ -59,6 +59,11 @@ const goldValue = document.getElementById('gold-value');
 const waveValue = document.getElementById('wave-value');
 const timeValue = document.getElementById('time-value');
 
+// Pause overlay
+const pauseOverlay = document.getElementById('pause-overlay');
+const btnPauseResume = document.getElementById('btn-pause-resume');
+const btnPauseQuit = document.getElementById('btn-pause-quit');
+
 // Game-over stat elements
 const statTime = document.getElementById('stat-time');
 const statWave = document.getElementById('stat-wave');
@@ -247,10 +252,10 @@ function handleKeyDown(e) {
         return;
     }
 
-    // Escape to pause / show menu (placeholder)
+    // Escape to toggle pause
     if (e.key === 'Escape') {
         e.preventDefault();
-        events.emit('menu:togglePause', null);
+        togglePause();
     }
 }
 
@@ -347,6 +352,24 @@ function endGame() {
     showSettlement(s, _lastStartConfig || {});
     startScreen.classList.add('hidden'); gameoverScreen.classList.add('hidden');
 }
+
+function togglePause() {
+    if (STATE.gameStatus === 'paused') {
+        STATE.gameStatus = 'playing';
+        pauseOverlay.classList.add('hidden');
+        gameLoop.start();
+    } else if (STATE.gameStatus === 'playing') {
+        STATE.gameStatus = 'paused';
+        gameLoop.stop();
+        pauseOverlay.classList.remove('hidden');
+    }
+}
+
+btnPauseResume.addEventListener('click', togglePause);
+btnPauseQuit.addEventListener('click', () => {
+    pauseOverlay.classList.add('hidden');
+    endGame();
+});
 
 events.on('loadout:confirmed', function(c) { startGame(c); });
 events.on('settlement:replay', function(c) { startGame(c); });

@@ -764,6 +764,21 @@
             }
         }
 
+        /* === Pause Overlay === */
+        #pause-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200; display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .pause-card {
+            background: rgba(22, 22, 38, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 16px; padding: 40px 48px; text-align: center;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; align-items: center;
+        }
+
         /* Hidden by default */
         .hidden {
             display: none !important;
@@ -958,6 +973,15 @@
         <!-- Equipment panel -->
         <div class="equipment-panel" id="equipment-panel">
             <div class="equipment-panel-title">装备</div>
+        </div>
+    </div>
+
+    <!-- Pause overlay -->
+    <div id="pause-overlay" class="hidden">
+        <div class="pause-card">
+            <h2 style="color:#f0c040;font-size:28px;letter-spacing:3px;margin-bottom:24px;">游戏暂停</h2>
+            <button id="btn-pause-resume" class="btn" style="width:240px;margin-bottom:12px;">继续游戏</button>
+            <button id="btn-pause-quit" class="btn btn-secondary" style="width:240px;">退出</button>
         </div>
     </div>
 
