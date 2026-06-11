@@ -92,8 +92,8 @@ const INITIAL_STATE = {
     /** Current wave number (1-based) */
     wave: 1,
 
-    /** Timer in seconds until the next boss spawn (0 = boss is on field or not yet started) */
-    bossTimer: 60,
+    /** Timer in seconds until the next boss spawn (first boss at 20s) */
+    bossTimer: 20,
 
     /** Total enemies killed this run */
     killCount: 0,

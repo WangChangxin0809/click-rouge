@@ -8,7 +8,7 @@
  *
  * Hard cap: never exceeds 50 active enemies on the field.
  *
- * Bosses spawn independently on a 60-90 second timer. Boss entities
+ * Bosses spawn independently: first boss at 20s, subsequent at 30-50s. Boss entities
  * coexist in STATE.enemies and are distinguished by their `isBoss` flag.
  * In the update loop, bosses are routed through updateBoss() (which handles
  * special behavior modes) while regular enemies use updateEnemy().
@@ -51,11 +51,11 @@ const MAX_ENEMIES = 50;
 /** Number of kills required to advance to the next wave */
 const KILLS_PER_WAVE = 10;
 
-/** Minimum boss spawn interval in seconds */
-const BOSS_TIMER_MIN = 60;
+/** Minimum boss spawn interval in seconds (subsequent spawns) */
+const BOSS_TIMER_MIN = 30;
 
-/** Maximum boss spawn interval in seconds */
-const BOSS_TIMER_MAX = 90;
+/** Maximum boss spawn interval in seconds (subsequent spawns) */
+const BOSS_TIMER_MAX = 50;
 
 /** Min number of minions spawned per 'boss:summon' event */
 const BOSS_SUMMON_MINION_COUNT_MIN = 2;
@@ -245,7 +245,7 @@ export function updateSpawnSystem(dt) {
             }
         }
 
-        // Reset boss timer to a random interval between 60 and 90 seconds
+        // Reset boss timer to a random interval between 30 and 50 seconds
         STATE.bossTimer = rng.nextFloat(BOSS_TIMER_MIN, BOSS_TIMER_MAX);
     }
 }
