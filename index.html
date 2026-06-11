@@ -227,6 +227,16 @@
             font-weight: bold;
         }
 
+        .hud-pause-btn {
+            background: none; border: 1px solid rgba(255,255,255,0.15);
+            color: #e0e0e0; font-size: 18px; width: 32px; height: 32px;
+            border-radius: 6px; cursor: pointer; pointer-events: auto;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0; line-height: 1; transition: background 0.15s;
+        }
+        .hud-pause-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
         .hud-divider {
             width: 1px;
             height: 24px;
@@ -948,6 +958,8 @@
                 <span>&#x23F1;</span>
                 <span class="value" id="time-value">0:00</span>
             </div>
+            <span class="hud-divider"></span>
+            <button id="btn-pause" class="hud-pause-btn" title="暂停">&#x23F8;</button>
         </div>
 
         <!-- Skill bar -->

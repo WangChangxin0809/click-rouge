@@ -61,8 +61,11 @@ const timeValue = document.getElementById('time-value');
 
 // Pause overlay
 const pauseOverlay = document.getElementById('pause-overlay');
+const btnPause = document.getElementById('btn-pause');
 const btnPauseResume = document.getElementById('btn-pause-resume');
 const btnPauseQuit = document.getElementById('btn-pause-quit');
+
+btnPause.addEventListener('click', togglePause);
 
 // Game-over stat elements
 const statTime = document.getElementById('stat-time');
