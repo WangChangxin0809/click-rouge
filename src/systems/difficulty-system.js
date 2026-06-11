@@ -7,18 +7,16 @@
  * time.
  *
  * Difficulty curve (elapsed time -> base scale):
- *   0–60s:   1.0x (warmup — player gets settled)
- *   60–180s: linear 1.0x → 2.0x
- *   180–300s: linear 2.0x → 3.5x
- *   300–420s: linear 3.5x → 5.0x (cap)
- *   420s+:   5.0x (hard cap, difficulty plateaus)
+ *   0–120s:  1.0x (extended warmup — more time to build)
+ *   120–300s: linear 1.0x → 1.8x
+ *   300–600s: linear 1.8x → 2.5x (cap)
+ *   600s+:   2.5x (hard cap, difficulty plateaus)
  *
- * Each multiplier field can be tuned independently by the designer.
- * For the initial implementation all four fields track the base scale,
- * but individual override functions (e.g. setEnemyHpCurve) can be added
- * later without changing any consuming code.
+ * Enemy damage multiplier only grows at 60% of the scale increase, so the
+ * player can survive longer without feeling unfairly one-shot:
+ *   enemyDamageMultiplier = 1 + (scale - 1) * 0.6
  *
- * Implements: Click Rouge difficulty scaling design.
+ * Implements: Click Rouge difficulty scaling design (v2 — lowered curve).
  *
  * Usage:
  *   import { updateDifficulty, getDifficulty } from './systems/difficulty-system.js';
@@ -56,34 +54,29 @@ const _difficulty = {
 /**
  * Compute the base difficulty scale from elapsed time.
  *
- * Piecewise-linear curve:
- *   [0, 60]     → 1.0
- *   [60, 180]   → lerp(1.0, 2.0)
- *   [180, 300]  → lerp(2.0, 3.5)
- *   [300, 420]  → lerp(3.5, 5.0)
- *   [420, +inf) → 5.0
+ * Piecewise-linear curve (v2 — gentler ramp, lower cap):
+ *   [0, 120]    → 1.0
+ *   [120, 300]  → lerp(1.0, 1.8)
+ *   [300, 600]  → lerp(1.8, 2.5)
+ *   [600, +inf) → 2.5
  *
  * @param {number} elapsed - Total elapsed run time in seconds
  * @returns {number} Base difficulty scale (>= 1.0)
  */
 function _computeScale(elapsed) {
-    if (elapsed <= 60) {
+    if (elapsed <= 120) {
         return 1.0;
     }
-    if (elapsed <= 180) {
-        // 1.0 → 2.0 over 120 seconds
-        return 1.0 + (elapsed - 60) / 120 * 1.0;
-    }
     if (elapsed <= 300) {
-        // 2.0 → 3.5 over 120 seconds
-        return 2.0 + (elapsed - 180) / 120 * 1.5;
+        // 1.0 → 1.8 over 180 seconds
+        return 1.0 + (elapsed - 120) / 180 * 0.8;
     }
-    if (elapsed <= 420) {
-        // 3.5 → 5.0 over 120 seconds
-        return 3.5 + (elapsed - 300) / 120 * 1.5;
+    if (elapsed <= 600) {
+        // 1.8 → 2.5 over 300 seconds
+        return 1.8 + (elapsed - 300) / 300 * 0.7;
     }
-    // Hard cap at 5.0
-    return 5.0;
+    // Hard cap at 2.5
+    return 2.5;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +98,8 @@ export function updateDifficulty(dt) {
     _difficulty.enemyHpMultiplier = scale;
     _difficulty.enemySpeedMultiplier = scale;
     _difficulty.spawnRateMultiplier = scale;
-    _difficulty.enemyDamageMultiplier = scale;
+    // Enemy damage grows slower than other stats — only 60% of the scale delta
+    _difficulty.enemyDamageMultiplier = 1 + (scale - 1) * 0.6;
 }
 
 /**
