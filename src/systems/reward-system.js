@@ -118,6 +118,7 @@ export function applyReward(reward) {
                         name: reward.name,
                         description: reward.description,
                         effectType: reward.effectType,
+                        typeId: reward.typeId,
                         cooldown: reward.cooldown,
                         duration: reward.duration,
                         stack: 1,
@@ -327,6 +328,7 @@ function _generateSkill(bossTier, timestamp, index) {
         cooldown: chosen.cooldown,
         duration: chosen.duration,
         effectType: chosen.effectType,
+        typeId: chosen.id,
         stats: {},
     };
 }
