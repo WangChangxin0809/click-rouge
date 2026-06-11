@@ -315,7 +315,7 @@ events.on('player:damaged', (_payload) => {
 // Skill VFX — thunder strike: lightning burst + yellow flash
 events.on('skill:thunder', (_payload) => {
     // Burst from the centre of the design-resolution screen
-    burstThunder(960, 540);
+    burstThunder(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
     triggerScreenFlash('#ffff00', 0.25, 0.15);
 });
 
@@ -327,7 +327,7 @@ events.on('boss:spawned', (_payload) => {
 
 // Player healed — green rising particles + soft green flash
 events.on('player:healed', (_payload) => {
-    burstHeal(960, 540);
+    burstHeal(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
     triggerScreenFlash('#44ff88', 0.15, 0.3);
 });
 
