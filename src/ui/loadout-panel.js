@@ -183,7 +183,7 @@ function _buildSkillsSection() {
     header.className = 'loadout-section-header';
     section.appendChild(header);
 
-    const owned = getAllOwned('skills');
+    const owned = getAllOwned('skill');
     const ownedIds = Object.keys(owned);
 
     // Update header with count
@@ -261,7 +261,7 @@ function _buildFollowersSection() {
     header.textContent = `随从 (已选 ${_selectedFollowers.length}/${MAX_FOLLOWERS})`;
     section.appendChild(header);
 
-    const owned = getAllOwned('followers');
+    const owned = getAllOwned('follower');
     const ownedIds = Object.keys(owned);
 
     if (ownedIds.length === 0) {

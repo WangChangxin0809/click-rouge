@@ -31,7 +31,16 @@ import { ENEMY_TYPES } from './data/enemy-definitions.js';
 import { BOSS_TYPES } from './data/boss-definitions.js';
 import { initMainMenu, showMainMenu } from './ui/main-menu.js';
 import { initLevelSelect, showLevelSelect } from './ui/level-select.js';
-import { loadMeta, getPermanentGold } from './systems/meta-progression.js';
+import { initLoadoutPanel, showLoadoutPanel } from './ui/loadout-panel.js';
+import { initShopPanel, showShopPanel } from './ui/shop-panel.js';
+import { initSettlementPanel, showSettlement, cacheRunConfig } from './ui/settlement-panel.js';
+import { loadMeta, getPermanentGold, recordRunComplete, getItemLevel } from './systems/meta-progression.js';
+import { LEVELS } from './data/level-config.js';
+import { SKILLS } from './data/skill-data.js';
+import { FOLLOWERS } from './data/follower-data.js';
+import { EQUIPMENT } from './data/equipment-data.js';
+import { scaleStats } from './data/level-scaling.js';
+import { createFollower } from './entities/follower.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -140,9 +149,9 @@ function showScreen(name) {
     // Delegate content refresh to the appropriate show function
     if (name === 'main-menu') showMainMenu();
     if (name === 'level-select') showLevelSelect();
-    if (name === 'shop-panel') { /* TODO: shop UI */ }
-    if (name === 'loadout-panel') { /* TODO: loadout UI */ }
-    if (name === 'settlement-panel') { /* TODO: settlement UI */ }
+    if (name === 'shop-panel') showShopPanel();
+    if (name === 'loadout-panel') showLoadoutPanel();
+    if (name === 'settlement-panel') { /* Settlement shown via showSettlement() directly */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -250,14 +259,92 @@ window.addEventListener('keydown', handleKeyDown);
 
 /**
  * Start (or restart) a new game run.
+ * @param {Object} [config={}]
+ * @param {number} [config.levelId] - Selected level ID
+ * @param {string[]} [config.skills] - Array of skill typeIds to equip
+ * @param {string[]} [config.followers] - Array of follower typeIds to bring
+ * @param {Object} [config.equipment] - { weapon, armor, accessory } each null or typeId
  */
-function startGame() {
+let _lastStartConfig = null;
+
+function startGame(config = {}) {
     // Clean up any lingering reward panel from a previous run
     hideRewardPanel();
+
+    // Cache run config for settlement retry
+    _lastStartConfig = config;
+    cacheRunConfig(config);
 
     STATE.reset();
     STATE.gameStatus = 'playing';
     STATE.clickQueue = [];
+    STATE._bossKills = 0;
+
+    // Apply level config if provided
+    if (config.levelId != null) {
+        STATE._selectedLevelId = config.levelId;
+        const levelConfig = LEVELS[config.levelId];
+        if (levelConfig) {
+            STATE.levelConfig = levelConfig;
+        }
+    }
+
+    // Apply skills from loadout config
+    if (config.skills && config.skills.length > 0) {
+        STATE.player.activeSkills = [];
+        for (const typeId of config.skills) {
+            const def = SKILLS[typeId];
+            if (!def) continue;
+            const level = getItemLevel('skill', typeId) || 1;
+            const scaled = scaleStats(def.base, def.perLevel, level);
+            STATE.player.activeSkills.push({
+                id: `skill_${typeId}`,
+                typeId,
+                name: def.label,
+                description: `${def.description} (Lv.${level})`,
+                effectType: def.effectType,
+                cooldown: scaled.cooldown || def.cooldown,
+                duration: def.duration || 0,
+                level,
+                _cooldownRemaining: 0,
+                _cooldownTotal: 0,
+            });
+        }
+        setSkillSlots(STATE.player.activeSkills);
+    }
+
+    // Apply followers from loadout config
+    if (config.followers && config.followers.length > 0) {
+        STATE.player.activeFollowers = [];
+        for (let i = 0; i < config.followers.length; i++) {
+            const typeId = config.followers[i];
+            const level = getItemLevel('follower', typeId) || 1;
+            const follower = createFollower(typeId, FOLLOWERS, i, config.followers.length, level);
+            STATE.player.activeFollowers.push(follower);
+        }
+    }
+
+    // Apply equipment from loadout config
+    if (config.equipment) {
+        for (const slot of ['weapon', 'armor', 'accessory']) {
+            const typeId = config.equipment[slot];
+            if (!typeId) {
+                STATE.player.equipSlots[slot] = null;
+                continue;
+            }
+            const def = EQUIPMENT[typeId];
+            if (!def) continue;
+            const level = getItemLevel('equip', typeId) || 1;
+            const stats = scaleStats(def.base, def.perLevel, level);
+            STATE.player.equipSlots[slot] = {
+                typeId,
+                name: def.name || typeId,
+                level,
+                slot,
+                stats,
+            };
+        }
+    }
 
     initSpawnSystem();
     initEconomySystem();
@@ -282,26 +369,20 @@ function endGame() {
     gameLoop.stop();
     STATE.gameStatus = 'gameOver';
 
-    // Populate game-over stats
-    const totalSec = Math.floor(STATE.elapsedTime);
-    const min = Math.floor(totalSec / 60);
-    const sec = totalSec % 60;
-    statTime.textContent = `${min}:${String(sec).padStart(2, '0')}`;
-    statWave.textContent = String(STATE.maxWaveReached);
-    statKills.textContent = String(STATE.killCount);
-    statGold.textContent = String(STATE.player.gold);
-
-    // Show game-over card
-    startScreen.classList.add('hidden');
-    gameoverScreen.classList.remove('hidden');
-
-    events.emit('game:ended', {
-        elapsedTime: STATE.elapsedTime,
+    // Record run and show settlement
+    const stats = {
+        gold: STATE.player.gold,
         wave: STATE.maxWaveReached,
         kills: STATE.killCount,
-        gold: STATE.player.gold,
-    });
-    console.log('[ClickRouge] Game over.');
+        bossKills: STATE._bossKills || 0,
+        elapsedTime: STATE.elapsedTime,
+        levelId: STATE._selectedLevelId || 1,
+    };
+    recordRunComplete(stats);
+    showSettlement(stats, _lastStartConfig || {});
+
+    startScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
 }
 
 // ---------------------------------------------------------------------------
