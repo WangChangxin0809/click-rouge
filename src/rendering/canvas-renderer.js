@@ -33,6 +33,7 @@ import { renderFollowers } from './follower-renderer.js';
 import { renderProjectiles } from '../entities/projectile.js';
 import { renderBossHpBar } from './boss-renderer.js';
 import { renderBackground } from './background-renderer.js';
+import { renderBase } from './base-renderer.js';
 import { getShakeOffset } from './screen-shake.js';
 
 // ---------------------------------------------------------------------------
@@ -306,6 +307,9 @@ export class CanvasRenderer {
 
         // --- Dynamic background (stars, grid, gradient) ---
         renderBackground(ctx, state.elapsedTime);
+
+        // --- Player base / castle (center of screen) ---
+        renderBase(ctx, state.elapsedTime);
 
         // Apply screen shake
         const shake = getShakeOffset();

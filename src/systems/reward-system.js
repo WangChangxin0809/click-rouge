@@ -42,7 +42,48 @@ const TYPE_WEIGHTS = {
 // ---------------------------------------------------------------------------
 
 /**
- * Generate reward options for the player to choose from.
+ * Generate mini reward options for kill-based triggers (2 choices, pick 1).
+ *
+ * Unlike boss rewards, mini rewards are smaller in scope — 2 options instead of
+ * 3-4. The tier caps at the provided value (1-4).
+ *
+ * @param {number} tier - Reward tier based on wave number (capped at 4)
+ * @returns {Array<{id: string, name: string, description: string, type: string, tier: number, stats: Object, slot?: string}>}
+ */
+export function generateMiniRewards(tier) {
+    const count = 2;
+    const rewards = [];
+    const timestamp = Date.now();
+
+    for (let i = 0; i < count; i++) {
+        const type = _pickRewardType();
+        let reward;
+
+        switch (type) {
+            case 'equipment':
+                reward = _generateEquipment(tier, timestamp, i);
+                break;
+            case 'skill':
+                reward = _generateSkill(tier, timestamp, i);
+                break;
+            case 'follower':
+                reward = _generateFollower(tier, timestamp, i);
+                break;
+            case 'buff':
+                reward = _generateBuff(timestamp, i);
+                break;
+            default:
+                reward = _generateEquipment(tier, timestamp, i);
+        }
+
+        rewards.push(reward);
+    }
+
+    return rewards;
+}
+
+/**
+ * Generate reward options for the player to choose from (boss reward).
  *
  * @param {number} bossTier - Boss tier (1 = 3 choices, 2+ = 4 choices)
  * @returns {Array<{id: string, name: string, description: string, type: string, tier: number, stats: Object, slot?: string}>}

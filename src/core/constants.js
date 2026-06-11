@@ -14,3 +14,6 @@ export const DESIGN_WIDTH = 1920;
 
 /** Fixed design height in logical pixels. All draw coordinates are relative to this. */
 export const DESIGN_HEIGHT = 1080;
+
+/** Base damage radius — enemies within this distance from center damage the player. */
+export const BASE_DAMAGE_RADIUS = 80;

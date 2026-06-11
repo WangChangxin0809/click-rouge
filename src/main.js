@@ -19,7 +19,7 @@ import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstHe
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
-import { generateRewards, applyReward } from './systems/reward-system.js';
+import { generateRewards, generateMiniRewards, applyReward } from './systems/reward-system.js';
 import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
 import { updateSkillBar, setSkillSlots } from './ui/skill-bar.js';
 import { updateEquipmentPanel } from './ui/equipment-panel.js';
@@ -366,6 +366,23 @@ events.on('boss:died', (payload) => {
     STATE.gameStatus = 'rewardPicking';
 
     const rewards = generateRewards(payload.tier);
+    showRewardPanel(rewards, (reward) => {
+        applyReward(reward);
+
+        // Refresh skill bar if a skill reward was picked
+        if (STATE.player.activeSkills && STATE.player.activeSkills.length > 0) {
+            setSkillSlots(STATE.player.activeSkills);
+        }
+
+        STATE.gameStatus = 'playing';
+    });
+});
+
+// Kill-based mini reward — 2-choose-1 upgrade during combat
+events.on('reward:trigger', (payload) => {
+    if (STATE.gameStatus !== 'playing') return;
+    STATE.gameStatus = 'rewardPicking';
+    const rewards = generateMiniRewards(payload.tier);
     showRewardPanel(rewards, (reward) => {
         applyReward(reward);
 

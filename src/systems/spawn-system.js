@@ -1,5 +1,5 @@
 /**
- * Spawn System — Controls enemy wave-based spawning.
+ * Spawn System — Controls enemy wave-based spawning and base defense mechanics.
  *
  * Spawns enemies from random screen edges at intervals that decrease over
  * time (starting at 2.0s, decaying to a floor of 0.3s). Wave progression
@@ -8,12 +8,20 @@
  *
  * Hard cap: never exceeds 50 active enemies on the field.
  *
+ * Base defense: regular enemies that reach within BASE_DAMAGE_RADIUS pixels of
+ * the screen center deal damage to the player and are removed (replaces the old
+ * lifetime-timeout mechanic). Bosses keep the timeout-based damage since they
+ * are too large to realistically "reach" the base at that distance.
+ *
+ * Kill-based mini rewards: every KILLS_PER_REWARD kills (outside of boss fights),
+ * a 'reward:trigger' event fires to offer the player a 2-choose-1 upgrade.
+ *
  * Bosses spawn independently: first boss at 20s, subsequent at 30-50s. Boss entities
  * coexist in STATE.enemies and are distinguished by their `isBoss` flag.
  * In the update loop, bosses are routed through updateBoss() (which handles
  * special behavior modes) while regular enemies use updateEnemy().
  *
- * Implements: Click Rouge GDD — enemy wave spawning + boss system.
+ * Implements: Click Rouge GDD — enemy wave spawning + boss system + base defense.
  *
  * Usage:
  *   import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
@@ -22,7 +30,7 @@
  *   updateSpawnSystem(dt);
  */
 
-import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
+import { DESIGN_WIDTH, DESIGN_HEIGHT, BASE_DAMAGE_RADIUS } from '../core/constants.js';
 import { STATE } from '../core/game-state.js';
 import { events } from '../core/event-bus.js';
 import { rng } from '../core/random.js';
@@ -62,6 +70,9 @@ const BOSS_SUMMON_MINION_COUNT_MIN = 2;
 
 /** Max number of minions spawned per 'boss:summon' event */
 const BOSS_SUMMON_MINION_COUNT_MAX = 3;
+
+/** Number of kills between kill-based mini reward triggers */
+const KILLS_PER_REWARD = 15;
 
 /**
  * Enemy type pools by wave (1-based index).
@@ -126,6 +137,9 @@ let _spawnTimer = 0;
 /** Last recorded wave number, used to detect wave transitions */
 let _lastWave = 1;
 
+/** Last kill count at which a kill-based mini reward was triggered */
+let _lastRewardKill = 0;
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -139,39 +153,61 @@ let _lastWave = 1;
 export function initSpawnSystem() {
     _spawnTimer = 0;
     _lastWave = STATE.wave;
+    _lastRewardKill = 0;
 }
 
 /**
  * Per-frame update.
  *
- * Performs four operations in order:
- *   1. Update and clean up existing enemies (movement + dead removal).
- *      Bosses are routed through updateBoss(); regular enemies through updateEnemy().
- *   2. Check and advance wave based on kill count.
- *   3. Attempt to spawn a new enemy if the spawn timer has elapsed.
- *   4. Decrement boss timer and spawn a boss when it reaches zero.
+ * Performs five operations in order:
+ *   1. Update and clean up existing enemies:
+ *      - Regular enemies: moved via updateEnemy(), removed when they reach the
+ *        base center (distance < BASE_DAMAGE_RADIUS) — deals damage to player.
+ *      - Bosses: routed through updateBoss() with timeout-based damage.
+ *      - Dead enemies (hp <= 0) are removed.
+ *   2. Check for kill-based mini reward trigger (every KILLS_PER_REWARD kills).
+ *   3. Check and advance wave based on kill count.
+ *   4. Attempt to spawn a new enemy if the spawn timer has elapsed.
+ *   5. Decrement boss timer and spawn a boss when it reaches zero.
  *
  * @param {number} dt - Delta time in seconds since last frame
  */
 export function updateSpawnSystem(dt) {
-    // --- Step 1: Update enemies and remove dead/expired ones ---
-    // Bosses use updateBoss (handles special behaviors); regular enemies use updateEnemy.
+    // --- Step 1: Update enemies and remove dead/expired/base-reached ---
+    // Bosses use updateBoss (handles special behaviors + timeout); regular enemies use
+    // updateEnemy for movement but are removed when they reach the base (distance check).
+    const cx = DESIGN_WIDTH / 2;
+    const cy = DESIGN_HEIGHT / 2;
     for (let i = STATE.enemies.length - 1; i >= 0; i--) {
         const enemy = STATE.enemies[i];
-        const result = enemy.isBoss
-            ? updateBoss(enemy, dt)
-            : updateEnemy(enemy, dt);
 
-        if (result !== null) {
-            // Enemy/boss lifetime expired — deal timeout damage
-            events.emit('player:damaged', { damage: result.damage, source: 'enemy_timeout', enemy });
-            STATE.player.hp -= result.damage;
-            if (enemy.isBoss) {
+        if (enemy.isBoss) {
+            // Bosses keep the timeout-based damage mechanic (boss is too large to
+            // realistically "reach" the base at 80px).
+            const result = updateBoss(enemy, dt);
+            if (result !== null) {
+                events.emit('player:damaged', { damage: result.damage, source: 'boss_timeout', enemy });
+                STATE.player.hp -= result.damage;
                 events.emit('boss:died', enemy);
+                STATE.enemies.splice(i, 1);
+                continue;
             }
-            STATE.enemies.splice(i, 1);
-            continue;
+        } else {
+            // Regular enemies: movement only (lifetime timeout replaced by distance check)
+            updateEnemy(enemy, dt);
+
+            // Check if enemy reached the base center
+            const dx = enemy.x - cx;
+            const dy = enemy.y - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < BASE_DAMAGE_RADIUS) {
+                events.emit('player:damaged', { damage: enemy.damage, source: 'enemy_reached_base', enemy });
+                STATE.player.hp -= enemy.damage;
+                STATE.enemies.splice(i, 1);
+                continue;
+            }
         }
+
         // Remove enemies killed by combat system (hp <= 0) or otherwise marked dead
         if (!enemy.alive || enemy.hp <= 0) {
             if (enemy.isBoss) {
@@ -181,7 +217,24 @@ export function updateSpawnSystem(dt) {
         }
     }
 
-    // --- Step 2: Wave progression ---
+    // --- Step 2: Kill-based mini reward trigger ---
+    // Every KILLS_PER_REWARD kills (not overlapped with boss spawns), emit a mini
+    // reward event that lets the player pick 1 of 2 options.
+    {
+        const currentRewardBlock = Math.floor(STATE.killCount / KILLS_PER_REWARD);
+        const lastRewardBlock = Math.floor(_lastRewardKill / KILLS_PER_REWARD);
+        if (currentRewardBlock > lastRewardBlock) {
+            _lastRewardKill = STATE.killCount;
+            const hasActiveBoss = STATE.enemies.some(e => e.isBoss === true);
+            if (!hasActiveBoss) {
+                // Tier scales with current wave (capped at 4)
+                const rewardTier = Math.min(STATE.wave, 4);
+                events.emit('reward:trigger', { tier: rewardTier });
+            }
+        }
+    }
+
+    // --- Step 3: Wave progression ---
     const expectedWave = Math.floor(STATE.killCount / KILLS_PER_WAVE) + 1;
     if (expectedWave > _lastWave) {
         _lastWave = expectedWave;
@@ -192,7 +245,7 @@ export function updateSpawnSystem(dt) {
         events.emit('wave:start', { wave: STATE.wave });
     }
 
-    // --- Step 3: Spawn timer ---
+    // --- Step 4: Spawn timer ---
     const diff = getDifficulty();
     const interval = Math.max(
         SPAWN_INTERVAL_MIN,
@@ -221,7 +274,7 @@ export function updateSpawnSystem(dt) {
         }
     }
 
-    // --- Step 4: Boss spawn timer (runs every frame, independent of enemy spawn timer) ---
+    // --- Step 5: Boss spawn timer (runs every frame, independent of enemy spawn timer) ---
     STATE.bossTimer -= dt;
     if (STATE.bossTimer <= 0) {
         // Only spawn if no boss is currently on the field and the cap isn't reached
