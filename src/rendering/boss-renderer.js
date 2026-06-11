@@ -83,8 +83,8 @@ export function renderBossHpBar(ctx, enemies, now) {
         ? Math.max(0, Math.min(1, boss.hp / boss.maxHp))
         : 0;
 
-    const barW = 520;
-    const barH = 22;
+    const barW = 768;
+    const barH = 26;
     const barX = (DESIGN_WIDTH - barW) / 2;
     const barY = 70;
 
@@ -140,14 +140,14 @@ export function renderBossHpBar(ctx, enemies, now) {
 
     // Boss name label
     const name = boss.typeId ? boss.typeId.replace(/_/g, ' ').toUpperCase() : 'BOSS';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText(name, DESIGN_WIDTH / 2, barY - 6);
 
     // HP numbers
-    ctx.font = '11px sans-serif';
+    ctx.font = '12px sans-serif';
     ctx.fillStyle = '#dddddd';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
