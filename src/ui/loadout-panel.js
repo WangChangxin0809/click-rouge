@@ -87,7 +87,7 @@ function _injectStyles() {
         .loadout-section { margin-bottom: 20px; }
         .loadout-section-header {
             font-size: 16px; color: #e0e0e0; margin-bottom: 10px; letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;
+            border-bottom: 2px solid rgba(240, 192, 64, 0.2); padding-bottom: 6px;
         }
         .loadout-card-grid { display: flex; gap: 10px; flex-wrap: wrap; }
         .loadout-card {
@@ -100,6 +100,7 @@ function _injectStyles() {
         .loadout-card-selected {
             border-color: #4ecca3 !important;
             box-shadow: 0 0 14px rgba(78,204,163,0.3);
+            animation: cardPulse 2s ease-in-out infinite;
         }
         .loadout-card-checkmark {
             position: absolute; top: 4px; right: 6px; font-size: 14px; color: #4ecca3; font-weight: bold;
@@ -118,7 +119,17 @@ function _injectStyles() {
         .loadout-equip-none { font-size: 13px; color: #555568; font-style: italic; }
         .loadout-equip-card { width: auto; min-width: 100px; flex-direction: row; padding: 8px 12px; }
         .loadout-empty-msg { text-align: center; color: #666680; padding: 20px; font-size: 13px; }
-        .loadout-start-btn { margin-left: auto; }
+        .loadout-bottom-bar {
+            display: flex; justify-content: center; padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0;
+        }
+        .loadout-start-btn {
+            font-size: 20px; padding: 14px 60px; letter-spacing: 3px;
+        }
+        @keyframes cardPulse {
+            0%, 100% { box-shadow: 0 0 14px rgba(78,204,163,0.3); }
+            50% { box-shadow: 0 0 24px rgba(78,204,163,0.55); }
+        }
 
         @media (max-width: 480px) {
             .loadout-title { font-size: 16px; }
@@ -233,14 +244,8 @@ function _buildPanel() {
     title.className = 'loadout-title';
     title.textContent = '装备配置';
 
-    const startBtn = document.createElement('button');
-    startBtn.className = 'btn loadout-start-btn';
-    startBtn.textContent = '开始战斗';
-    startBtn.addEventListener('click', _handleConfirm);
-
     topBar.appendChild(backBtn);
     topBar.appendChild(title);
-    topBar.appendChild(startBtn);
 
     wrap.appendChild(topBar);
 
@@ -258,6 +263,17 @@ function _buildPanel() {
     content.appendChild(_buildEquipmentSection());
 
     wrap.appendChild(content);
+
+    // -- Bottom bar -----------------------------------------------------------
+    const bottomBar = document.createElement('div');
+    bottomBar.className = 'loadout-bottom-bar';
+    const startBtn = document.createElement('button');
+    startBtn.className = 'btn loadout-start-btn';
+    startBtn.textContent = '⚔ 开始战斗';
+    startBtn.addEventListener('click', _handleConfirm);
+    bottomBar.appendChild(startBtn);
+    wrap.appendChild(bottomBar);
+
     _panelEl.appendChild(wrap);
 }
 
@@ -282,7 +298,7 @@ function _buildSkillsSection() {
 
     // Update header with count
     const _updateSkillHeader = () => {
-        header.textContent = `技能 (已选 ${_selectedSkills.length}/${MAX_SKILLS})`;
+        header.textContent = `✨ 技能 (已选 ${_selectedSkills.length}/${MAX_SKILLS})`;
     };
     _updateSkillHeader();
 
@@ -352,7 +368,7 @@ function _buildFollowersSection() {
 
     const header = document.createElement('h3');
     header.className = 'loadout-section-header';
-    header.textContent = `随从 (已选 ${_selectedFollowers.length}/${MAX_FOLLOWERS})`;
+    header.textContent = `\u{1F6E1} 随从 (已选 ${_selectedFollowers.length}/${MAX_FOLLOWERS})`;
     section.appendChild(header);
 
     const owned = getAllOwned('follower');
@@ -419,7 +435,7 @@ function _buildEquipmentSection() {
 
     const header = document.createElement('h3');
     header.className = 'loadout-section-header';
-    header.textContent = '装备';
+    header.textContent = '⚔ 装备';
     section.appendChild(header);
 
     const owned = getAllOwned('equip');
