@@ -9,21 +9,32 @@
  * while iterating.
  *
  * Preset convenience functions cover the most common VFX needs:
- *   burstHit()    — small yellow sparks on hit
- *   burstDeath()  — larger explosion in the enemy's colour
- *   burstCrit()   — big orange burst for critical hits
+ *   burstHit()      — small yellow sparks on hit
+ *   burstDeath()    — larger explosion in the enemy's colour
+ *   burstCrit()     — big orange burst for critical hits
+ *   burstThunder()  — yellow lightning beams (radial)
+ *   burstFreeze()   — blue ice-crystal burst
+ *   burstHeal()     — green rising particles
+ *   burstPoison()   — purple poison-mist cloud
+ *
+ * Screen flash — a temporary colour overlay drawn across the entire canvas
+ * (handled by CanvasRenderer via getScreenFlash()). Use triggerScreenFlash()
+ * to pulse a colour for impact feedback.
  *
  * Usage:
- *   import { createParticle, updateParticles, renderParticles, burstHit } from './rendering/fx-renderer.js';
+ *   import { createParticle, updateParticles, renderParticles, burstHit,
+ *            triggerScreenFlash, updateScreenFlash, getScreenFlash } from './rendering/fx-renderer.js';
  *
  *   // In update loop:
  *   updateParticles(dt);
+ *   updateScreenFlash(dt);
  *
  *   // In render (inside CanvasRenderer.render after scale transform):
  *   renderParticles(ctx, STATE.particles);
  *
  *   // Trigger a burst anywhere:
  *   burstHit(enemy.x, enemy.y);
+ *   triggerScreenFlash('#ff0000', 0.3, 0.1);
  */
 
 import { ObjectPool } from '../core/object-pool.js';
@@ -146,7 +157,7 @@ export function updateParticles(dt) {
  * Draw all active particles to the canvas.
  *
  * The context MUST already have the design-resolution scale transform applied.
- * Alpha fades linearly from 1 → 0 over the particle's lifetime.
+ * Alpha fades linearly from 1 -> 0 over the particle's lifetime.
  *
  * @param {CanvasRenderingContext2D} ctx — 2D context (already scaled)
  * @param {Object[]} particles — Array from STATE.particles
@@ -177,7 +188,7 @@ export function renderParticles(ctx, particles) {
 
 /**
  * Small yellow burst on a normal hit.
- * 10–15 particles, fast and short-lived.
+ * 10-15 particles, fast and short-lived.
  *
  * @param {number} x  @param {number} y
  */
@@ -195,7 +206,7 @@ export function burstHit(x, y) {
  * Larger explosion when an enemy dies. Uses the enemy's colour so the
  * effect matches the creature that died.
  *
- * 20–30 particles, wider speed range, longer life.
+ * 20-30 particles, wider speed range, longer life.
  *
  * @param {number} x  @param {number} y
  * @param {string} [color='#ff4444'] — Fallback colour if none provided
@@ -212,7 +223,7 @@ export function burstDeath(x, y, color) {
 
 /**
  * Big orange burst for critical hits.
- * 25–35 particles, widest speed and size ranges.
+ * 25-35 particles, widest speed and size ranges.
  *
  * @param {number} x  @param {number} y
  */
@@ -224,4 +235,232 @@ export function burstCrit(x, y) {
         color: '#ff8800',
         size:  [3, 8],
     });
+}
+
+/**
+ * Thunder-strike lightning beams — bright yellow particles shooting radially
+ * outward from the impact center. The radial velocity gives the impression of
+ * lightning bolts splitting in all directions.
+ *
+ * 40-60 particles, high-speed, short-lived, golden-yellow.
+ *
+ * @param {number} x  @param {number} y
+ */
+export function burstThunder(x, y) {
+    const count = rng.nextInt(40, 60);
+    const life  = 0.35;
+
+    // Pre-compute a few beam-like angles: 4 cardinal + 4 diagonal directions,
+    // then add fuzz around each so the burst looks like forked lightning.
+    const baseAngles = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, -3 * Math.PI / 4, -Math.PI / 2, -Math.PI / 4];
+    const perBeam = Math.floor(count / baseAngles.length);
+
+    for (let b = 0; b < baseAngles.length; b++) {
+        const base = baseAngles[b];
+        for (let i = 0; i < perBeam; i++) {
+            const p = _pool.acquire();
+            p.x = x;
+            p.y = y;
+
+            // Angle fuzz: +/- 20 degrees around the beam direction
+            const angle = base + rng.nextFloat(-0.35, 0.35);
+            const speed = rng.nextFloat(300, 700);
+            p.vx = Math.cos(angle) * speed;
+            p.vy = Math.sin(angle) * speed;
+
+            p.maxLife = life;
+            p.life    = life;
+            // Vary colour between bright yellow and pale gold
+            p.color   = rng.nextFloat(0, 1) < 0.5 ? '#ffe600' : '#ffcc00';
+            p.size    = rng.nextFloat(2, 6);
+            p.active  = true;
+
+            STATE.particles.push(p);
+        }
+    }
+}
+
+/**
+ * Freeze — blue ice-crystal burst.
+ * Particles drift outward slowly with a downward-biased velocity for a
+ * "shattering ice" feel. 30-45 particles, medium life.
+ *
+ * @param {number} x  @param {number} y
+ */
+export function burstFreeze(x, y) {
+    const count = rng.nextInt(30, 45);
+    const life  = 0.5;
+
+    for (let i = 0; i < count; i++) {
+        const p = _pool.acquire();
+        p.x = x;
+        p.y = y;
+
+        const angle = rng.nextFloat(-Math.PI, Math.PI);
+        // Bias velocity slightly downward so ice "falls"
+        const speed = rng.nextFloat(60, 250);
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed + rng.nextFloat(20, 60); // downward bias
+
+        p.maxLife = life;
+        p.life    = life;
+        // Blue to cyan palette
+        const shade = rng.nextFloat(0, 1);
+        if (shade < 0.33) {
+            p.color = '#88ccff';
+        } else if (shade < 0.66) {
+            p.color = '#aaddff';
+        } else {
+            p.color = '#cceeff';
+        }
+        p.size   = rng.nextFloat(2.5, 6);
+        p.active = true;
+
+        STATE.particles.push(p);
+    }
+}
+
+/**
+ * Heal — green rising particles that float upward like restorative energy.
+ * Particles start at the source and drift upward with gentle horizontal spread.
+ * 20-30 particles, medium life.
+ *
+ * @param {number} x  @param {number} y
+ */
+export function burstHeal(x, y) {
+    const count = rng.nextInt(20, 30);
+    const life  = 0.7;
+
+    for (let i = 0; i < count; i++) {
+        const p = _pool.acquire();
+        p.x = x;
+        p.y = y;
+
+        // Gentle horizontal spread, strong upward velocity
+        p.vx = rng.nextFloat(-40, 40);
+        p.vy = rng.nextFloat(-160, -60); // upward = negative Y
+
+        p.maxLife = life;
+        p.life    = life;
+        // Soft green palette
+        const shade = rng.nextFloat(0, 1);
+        if (shade < 0.5) {
+            p.color = '#44ff88';
+        } else {
+            p.color = '#88ffaa';
+        }
+        p.size   = rng.nextFloat(2, 5);
+        p.active = true;
+
+        STATE.particles.push(p);
+    }
+}
+
+/**
+ * Poison — purple/green toxic-mist particles that drift slowly outward with
+ * a slight upward bias (like rising fumes). 25-40 particles, longer life.
+ *
+ * @param {number} x  @param {number} y
+ */
+export function burstPoison(x, y) {
+    const count = rng.nextInt(25, 40);
+    const life  = 0.65;
+
+    for (let i = 0; i < count; i++) {
+        const p = _pool.acquire();
+        p.x = x;
+        p.y = y;
+
+        const angle = rng.nextFloat(-Math.PI, Math.PI);
+        const speed = rng.nextFloat(20, 120);
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed - rng.nextFloat(10, 50); // slight upward bias
+
+        p.maxLife = life;
+        p.life    = life;
+        // Purple / acid-green palette
+        const shade = rng.nextFloat(0, 1);
+        if (shade < 0.4) {
+            p.color = '#aa44ff';
+        } else if (shade < 0.75) {
+            p.color = '#8844cc';
+        } else {
+            p.color = '#66ff33'; // acid-green accent
+        }
+        p.size   = rng.nextFloat(2, 5.5);
+        p.active = true;
+
+        STATE.particles.push(p);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Screen flash effect
+// ---------------------------------------------------------------------------
+
+/** Current flash colour (CSS string), or null if no flash active. */
+let _flashColor = null;
+
+/** Current flash alpha (0..1), decays over time. */
+let _flashAlpha = 0;
+
+/** Peak alpha reached during this flash pulse. */
+let _flashPeakAlpha = 0;
+
+/** Total flash duration in seconds. */
+let _flashDuration = 0;
+
+/** Elapsed time since flash started, in seconds. */
+let _flashElapsed = 0;
+
+/**
+ * Start (or override) a screen-colour flash.
+ *
+ * The flash alpha ramps to `alpha` instantly and then decays linearly to 0
+ * over `duration` seconds.  Calling this while a flash is already active
+ * replaces the previous flash.
+ *
+ * @param {string} color — CSS colour string (e.g. '#ffff00', 'rgba(255,0,0,0.5)')
+ * @param {number} alpha — Peak alpha, clamped to [0..1]
+ * @param {number} duration — Total flash duration in seconds
+ */
+export function triggerScreenFlash(color, alpha, duration) {
+    _flashColor    = color;
+    _flashPeakAlpha = Math.max(0, Math.min(1, alpha));
+    _flashAlpha    = _flashPeakAlpha;
+    _flashDuration = Math.max(0, duration);
+    _flashElapsed  = 0;
+}
+
+/**
+ * Advance the screen flash state by dt seconds.
+ *
+ * Should be called once per frame from the game-update path.
+ * Alpha decays linearly from peak to 0 over the configured duration.
+ *
+ * @param {number} dt — Delta time in seconds
+ */
+export function updateScreenFlash(dt) {
+    if (_flashAlpha <= 0 || _flashDuration <= 0) return;
+
+    _flashElapsed += dt;
+    const progress = _flashElapsed / _flashDuration;
+    if (progress >= 1) {
+        _flashAlpha = 0;
+        _flashColor = null;
+    } else {
+        _flashAlpha = _flashPeakAlpha * (1 - progress);
+    }
+}
+
+/**
+ * Return the current screen flash state for CanvasRenderer to consume.
+ *
+ * @returns {{ color: string|null, alpha: number }}
+ */
+export function getScreenFlash() {
+    return {
+        color: _flashColor,
+        alpha: _flashAlpha,
+    };
 }

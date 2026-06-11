@@ -28,7 +28,7 @@
  */
 
 import { renderEnemies } from './enemy-renderer.js';
-import { renderParticles } from './fx-renderer.js';
+import { renderParticles, getScreenFlash } from './fx-renderer.js';
 import { renderFollowers } from './follower-renderer.js';
 import { renderProjectiles } from '../entities/projectile.js';
 import { getShakeOffset } from './screen-shake.js';
@@ -302,6 +302,16 @@ export class CanvasRenderer {
         ctx.save();
         ctx.scale(scaleX, scaleY);
 
+        // --- Background gradient ---
+        // Draw a dark gradient from top (deep charcoal) to bottom (near-black)
+        // so that screen-flash overlays have a solid base to tint.
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, DESIGN_HEIGHT);
+        bgGrad.addColorStop(0, '#1a1a2e');
+        bgGrad.addColorStop(0.5, '#16213e');
+        bgGrad.addColorStop(1, '#0f0f1a');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+
         // Apply screen shake
         const shake = getShakeOffset();
         ctx.save();
@@ -316,6 +326,18 @@ export class CanvasRenderer {
         renderProjectiles(ctx);
 
         ctx.restore(); // shake
+
+        // --- Screen flash overlay ---
+        // Drawn after all entities so it tints the entire scene.
+        const flash = getScreenFlash();
+        if (flash.color && flash.alpha > 0) {
+            ctx.save();
+            ctx.globalAlpha = flash.alpha;
+            ctx.fillStyle = flash.color;
+            ctx.fillRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+            ctx.restore();
+        }
+
         ctx.restore(); // scale
     }
 
