@@ -69,6 +69,7 @@ const _pool = new ObjectPool(
         active: false,
         trailX: 0, trailY: 0,    // previous position for trail effect
         hasTrail: false,         // whether trail rendering is enabled
+        alphaScale: 1,           // multiplier on the default life-based alpha
     }),
     /* reset   */ (p) => {
         p.x = 0; p.y = 0;
@@ -80,6 +81,7 @@ const _pool = new ObjectPool(
         p.active = false;
         p.trailX = 0; p.trailY = 0;
         p.hasTrail = false;
+        p.alphaScale = 1;
     },
     /* prewarm */ 300,
 );
@@ -186,7 +188,7 @@ export function renderParticles(ctx, particles) {
         const p = particles[i];
         if (!p.active) continue;
 
-        const alpha = p.maxLife > 0 ? p.life / p.maxLife : 0;
+        const alpha = (p.maxLife > 0 ? p.life / p.maxLife : 0) * (p.alphaScale != null ? p.alphaScale : 1);
         if (alpha <= 0) continue;
 
         // Color gradient interpolation if endColor is set
@@ -377,12 +379,12 @@ export function burstFreeze(x, y) {
 /**
  * Heal — green rising particles that float upward like restorative energy.
  * Particles start at the source and drift upward with gentle horizontal spread.
- * 20-30 particles, medium life.
+ * 8-12 particles, medium life, subdued alpha so the effect is not overpowering.
  *
  * @param {number} x  @param {number} y
  */
 export function burstHeal(x, y) {
-    const count = rng.nextInt(20, 30);
+    const count = rng.nextInt(8, 12);
     const life  = 0.7;
 
     for (let i = 0; i < count; i++) {
@@ -390,9 +392,9 @@ export function burstHeal(x, y) {
         p.x = x;
         p.y = y;
 
-        // Gentle horizontal spread, strong upward velocity
-        p.vx = rng.nextFloat(-40, 40);
-        p.vy = rng.nextFloat(-160, -60); // upward = negative Y
+        // Gentle horizontal spread, slow upward velocity
+        p.vx = rng.nextFloat(-20, 20);
+        p.vy = rng.nextFloat(-80, -30); // upward = negative Y, slower than before
 
         p.maxLife = life;
         p.life    = life;
@@ -403,8 +405,9 @@ export function burstHeal(x, y) {
         } else {
             p.color = '#88ffaa';
         }
-        p.size   = rng.nextFloat(2, 5);
-        p.active = true;
+        p.size       = rng.nextFloat(1.5, 3);
+        p.alphaScale = 0.5;  // subdued transparency for a softer effect
+        p.active     = true;
 
         STATE.particles.push(p);
     }

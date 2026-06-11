@@ -154,6 +154,35 @@ export function activateSkill(slotIndex) {
 }
 
 // ---------------------------------------------------------------------------
+// Auto-cast system
+// ---------------------------------------------------------------------------
+
+/**
+ * Auto-cast ready skills on each frame.
+ *
+ * Iterates through skill slots 1-4 in order. If a slot has an equipped skill
+ * and its cooldown is complete, it is automatically activated.
+ *
+ * Manual keypress (1-4) still works independently and can preempt auto-cast.
+ *
+ * Must be called once per frame after updateSkillSystem(dt).
+ *
+ * @param {number} dt - Delta time in seconds (unused; passed for consistency)
+ */
+export function updateAutoCast(dt) {
+    const skills = STATE.player.activeSkills;
+    if (!skills || skills.length === 0) return;
+
+    for (let i = 0; i < skills.length && i < 4; i++) {
+        const skill = skills[i];
+        if (!skill) continue;
+        if ((skill._cooldownRemaining || 0) <= 0) {
+            activateSkill(i + 1); // convert 0-based index to 1-based slot
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Internal: skill effect activators
 // ---------------------------------------------------------------------------
 

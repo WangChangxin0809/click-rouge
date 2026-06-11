@@ -19,6 +19,7 @@
  */
 
 import { events } from '../core/event-bus.js';
+import { STATE } from '../core/game-state.js';
 
 // ---------------------------------------------------------------------------
 // Internal state (closure)
@@ -180,6 +181,22 @@ function _buildCard(reward, index, prefersReducedMotion) {
     typeLabel.className = 'reward-card-type';
     typeLabel.textContent = TYPE_LABELS[reward.type] || reward.type;
     card.appendChild(typeLabel);
+
+    // Tier quality badge — T1 white, T2 blue, T3 purple, T4 gold
+    const tier = reward.tier || 1;
+    const tierLabel = document.createElement('div');
+    tierLabel.className = `reward-card-tier reward-card-tier-${tier}`;
+    tierLabel.textContent = `T${tier}`;
+    card.appendChild(tierLabel);
+
+    // Upgrade info — if this skill/follower is already owned, show "升级 Lv.X -> Lv.X+1"
+    const upgradeText = _buildUpgradeText(reward);
+    if (upgradeText) {
+        const upgradeEl = document.createElement('div');
+        upgradeEl.className = 'reward-card-upgrade';
+        upgradeEl.textContent = upgradeText;
+        card.appendChild(upgradeEl);
+    }
 
     // Description
     const desc = document.createElement('div');
