@@ -50,6 +50,20 @@ const HP_STAT_KEYS = ['maxHp'];
 export function recalculateStats() {
     const p = STATE.player;
 
+    // Snapshot runtime skill effect deltas so recalculation doesn't wipe them
+    let berserkDelta = 0;
+    let goldRushMultiplier = 1.0;
+    if (STATE.activeEffects) {
+        for (const fx of STATE.activeEffects) {
+            if (fx.type === 'berserk' && fx.speedBonus) {
+                berserkDelta += fx.speedBonus;
+            }
+            if (fx.type === 'gold_rush' && fx.goldMultiplier) {
+                goldRushMultiplier *= fx.goldMultiplier;
+            }
+        }
+    }
+
     // --- Gather all contributors ---
 
     /** @type {Object[]} */
@@ -159,4 +173,8 @@ export function recalculateStats() {
 
     // Sync clickAtk to effective atk
     p.clickAtk = p.atk;
+
+    // Re-apply runtime skill effect deltas that were snapshotted above
+    p.atkSpeedMult += berserkDelta;
+    p.goldMultiplier *= goldRushMultiplier;
 }
