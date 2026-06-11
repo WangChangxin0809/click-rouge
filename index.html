@@ -778,6 +778,39 @@
             z-index: 100; pointer-events: auto; opacity: 1;
         }
 
+        /* === Per-Screen Fullscreen Backgrounds === */
+        #main-menu.active {
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px),
+                radial-gradient(ellipse at 50% 120%, rgba(233, 69, 96, 0.12) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 50%, #141a2e 0%, #0a0d18 100%);
+        }
+        #level-select.active {
+            background:
+                linear-gradient(rgba(160, 130, 80, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(160, 130, 80, 0.05) 1px, transparent 1px),
+                radial-gradient(ellipse at 50% 25%, rgba(200, 155, 60, 0.10) 0%, transparent 65%),
+                radial-gradient(ellipse at 50% 50%, #1a160e 0%, #0e0c08 100%);
+        }
+        #shop-panel.active {
+            background:
+                radial-gradient(ellipse at 50% -10%, rgba(210, 150, 40, 0.14) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(180, 120, 40, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, #1a1410 0%, #0c0a06 100%);
+        }
+        #loadout-panel.active {
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(100,120,150,0.04) 3px, rgba(100,120,150,0.04) 6px),
+                radial-gradient(ellipse at 50% 100%, rgba(100, 140, 180, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, #161a24 0%, #0c0e14 100%);
+        }
+        #settlement-panel.active {
+            background:
+                repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(200,160,60,0.03) 60px, rgba(200,160,60,0.03) 61px),
+                radial-gradient(ellipse at 50% 70%, rgba(200, 150, 50, 0.10) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, #181410 0%, #0a0804 100%);
+        }
+
         /* === Responsive === */
         /* Reduced motion: disable cooldown transition animation */
         @media (prefers-reduced-motion: reduce) {
