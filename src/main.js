@@ -23,7 +23,7 @@ import { generateRewards, generateMiniRewards, applyReward } from './systems/rew
 import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
 import { updateSkillBar, setSkillSlots } from './ui/skill-bar.js';
 import { updateEquipmentPanel } from './ui/equipment-panel.js';
-import { initSkillSystem, updateSkillSystem, activateSkill } from './systems/skill-system.js';
+import { initSkillSystem, updateSkillSystem, activateSkill, updateAutoCast } from './systems/skill-system.js';
 import { updateAllFollowers } from './entities/follower.js';
 import { updateProjectiles, clearProjectiles } from './entities/projectile.js';
 import { addNotification, updateNotificationLog } from './ui/notification-log.js';
@@ -94,6 +94,7 @@ function update(dt) {
 
     updateCombatSystem();
     updateSkillSystem(dt);
+    updateAutoCast(dt);
     updateAllFollowers(dt, STATE.enemies);
     updateProjectiles(dt);
     updateEconomySystem(dt);
@@ -335,10 +336,9 @@ events.on('boss:spawned', (_payload) => {
     triggerShake(12, 0.3);
 });
 
-// Player healed — green rising particles + soft green flash
+// Player healed — green rising particles (no screen flash for subtle feedback)
 events.on('player:healed', (_payload) => {
     burstHeal(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
-    triggerScreenFlash('#44ff88', 0.15, 0.3);
 });
 
 // Skill activation from keyboard hotkeys

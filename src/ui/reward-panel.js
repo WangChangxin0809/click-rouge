@@ -19,6 +19,7 @@
  */
 
 import { events } from '../core/event-bus.js';
+import { STATE } from '../core/game-state.js';
 
 // ---------------------------------------------------------------------------
 // Internal state (closure)
@@ -181,6 +182,22 @@ function _buildCard(reward, index, prefersReducedMotion) {
     typeLabel.textContent = TYPE_LABELS[reward.type] || reward.type;
     card.appendChild(typeLabel);
 
+    // Tier quality badge — T1 white, T2 blue, T3 purple, T4 gold
+    const tier = reward.tier || 1;
+    const tierLabel = document.createElement('div');
+    tierLabel.className = `reward-card-tier reward-card-tier-${tier}`;
+    tierLabel.textContent = `T${tier}`;
+    card.appendChild(tierLabel);
+
+    // Upgrade info — if this skill/follower is already owned, show "升级 Lv.X -> Lv.X+1"
+    const upgradeText = _buildUpgradeText(reward);
+    if (upgradeText) {
+        const upgradeEl = document.createElement('div');
+        upgradeEl.className = 'reward-card-upgrade';
+        upgradeEl.textContent = upgradeText;
+        card.appendChild(upgradeEl);
+    }
+
     // Description
     const desc = document.createElement('div');
     desc.className = 'reward-card-desc';
@@ -242,6 +259,58 @@ function _handleSelection(reward, cardEl) {
     if (onPick) {
         onPick(reward);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internal: upgrade text builder
+// ---------------------------------------------------------------------------
+
+/**
+ * Build upgrade text if this reward would upgrade an already-owned entity.
+ *
+ * Checks STATE.player for existing skills/followers/equipment matching
+ * the reward's typeId or slot. Returns null for new entities or buffs.
+ *
+ * @param {Object} reward
+ * @returns {string|null}
+ */
+function _buildUpgradeText(reward) {
+    // Skill upgrade — check if player already owns this skill id
+    if (reward.type === 'skill') {
+        const existing = (STATE.player.activeSkills || []).find(
+            s => s.id === reward.typeId
+        );
+        if (existing) {
+            const currentLv = existing.stack || 1;
+            const nextLv = currentLv + 1;
+            return `升级 Lv.${currentLv}→Lv.${nextLv}`;
+        }
+    }
+
+    // Follower upgrade — check if player already owns this follower typeId
+    if (reward.type === 'follower') {
+        const existing = (STATE.player.activeFollowers || []).find(
+            f => f.typeId === reward.typeId
+        );
+        if (existing) {
+            const currentLv = existing.level || 1;
+            const nextLv = currentLv + 1;
+            return `升级 Lv.${currentLv}→Lv.${nextLv}`;
+        }
+    }
+
+    // Equipment upgrade — check if player has an item in the same slot
+    if (reward.type === 'weapon' || reward.type === 'armor' || reward.type === 'accessory') {
+        const currentEquip = STATE.player.equipSlots?.[reward.slot] || null;
+        if (currentEquip) {
+            const currentTier = currentEquip.tier;
+            const nextTier = reward.tier;
+            return `升级 T${currentTier}→T${nextTier}`;
+        }
+    }
+
+    // No upgrade text for buffs or brand-new entities
+    return null;
 }
 
 // ---------------------------------------------------------------------------

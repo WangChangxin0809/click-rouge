@@ -21,7 +21,7 @@ import { events } from '../core/event-bus.js';
 // Internal state (closure)
 // ---------------------------------------------------------------------------
 
-/** @type {Array<{id: string, name: string, cooldown: number, icon: string}>} */
+/** @type {Array<{id: string, name: string, cooldown: number, icon: string, stack: number}>} */
 let _skillSlots = [];
 
 /** @type {Object<number, number>} Map of slot index (1-4) → last use timestamp (STATE.elapsedTime) */
@@ -85,6 +85,7 @@ export function setSkillSlots(skills) {
         name: skill.name,
         cooldown: (skill.stats && skill.stats.cooldown) ? skill.stats.cooldown : 5,
         icon: _iconForSkill(skill.name),
+        stack: skill.stack || 1,
     }));
 
     _renderSlots();
@@ -186,12 +187,29 @@ function _renderSlots() {
                 nameEl.textContent = skill.name;
                 slotEl.appendChild(nameEl);
             }
+
+            // Level badge — show Lv.N when stack > 1
+            const existingBadge = slotEl.querySelector('.skill-level-badge');
+            if (skill.stack > 1) {
+                if (existingBadge) {
+                    existingBadge.textContent = `Lv.${skill.stack}`;
+                } else {
+                    const badgeEl = document.createElement('span');
+                    badgeEl.className = 'skill-level-badge';
+                    badgeEl.textContent = `Lv.${skill.stack}`;
+                    slotEl.appendChild(badgeEl);
+                }
+            } else {
+                if (existingBadge) existingBadge.remove();
+            }
         } else {
             slotEl.classList.remove('skill-slot-filled');
 
             // Remove skill content
             if (existingIcon) existingIcon.remove();
             if (existingName) existingName.remove();
+            const existingBadge = slotEl.querySelector('.skill-level-badge');
+            if (existingBadge) existingBadge.remove();
 
             slotEl.classList.add('skill-slot-empty');
         }
