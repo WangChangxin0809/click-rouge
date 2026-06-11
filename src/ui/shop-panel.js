@@ -513,6 +513,7 @@ function _bindEventDelegation() {
         // Back button
         if (target.closest('[data-action="back"]')) {
             hideShopPanel();
+            events.emit('menu:navigate', { screen: 'lobby' });
             return;
         }
 
