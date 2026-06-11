@@ -1,6 +1,20 @@
 # Click Rouge — 点击肉鸽
 
-HTML5 Canvas 点击肉鸽挂机游戏。纯 Web 单页，无框架、无构建工具。
+> **AI 全流程驱动的 Web 游戏作品**
+>
+> 本作品展示：单人 + AI 编程工具在数小时内从零产出可玩、有深度的完整游戏原型。
+> 全程约 50 个 PR、~8000 行 JS/CSS/HTML，AI 担当架构师、程序员、QA、美术多重角色。
+>
+> 相关文档：[作品说明](SUBMISSION.md) · [交接文档](HANDOFF.md) · [对话日志](CONVERSATION_LOG.md)
+
+## 在线体验
+
+```bash
+git clone https://github.com/WangChangxin0809/click-rouge.git
+cd click-rouge
+npx http-server -p 8082
+# 浏览器打开 http://localhost:8082
+```
 
 ## 玩法
 
