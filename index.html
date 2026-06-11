@@ -37,6 +37,23 @@
             display: block;
         }
 
+        /* === Ambient Particle Background (z-index: 1) === */
+        #bg-particles {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; pointer-events: none; overflow: hidden;
+        }
+        .bg-particle {
+            position: absolute; border-radius: 50%;
+            animation: bgParticleFloat linear infinite;
+            opacity: 0;
+        }
+        @keyframes bgParticleFloat {
+            0%   { opacity: 0; transform: translateY(100vh) scale(0); }
+            10%  { opacity: 0.6; }
+            90%  { opacity: 0.2; }
+            100% { opacity: 0; transform: translateY(-10vh) scale(1); }
+        }
+
         /* === Damage Layer (z-index: 5) === */
         #damage-layer {
             position: fixed;
@@ -721,6 +738,7 @@
             }
         }
 
+
         .reward-panel-enter {
             animation: rewardSlideUp 0.4s ease-out both;
         }
@@ -751,21 +769,13 @@
 
         /* Screen containers (main-menu, level-select, shop, loadout, settlement) */
         .screen {
-            display: none;
+            display: none; opacity: 0; transition: opacity 0.25s ease;
         }
 
         .screen.active {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 100;
-            pointer-events: auto;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; pointer-events: auto; opacity: 1;
         }
 
         /* === Responsive === */
@@ -855,6 +865,9 @@
 
     <!-- Canvas layer -->
     <canvas id="game-canvas"></canvas>
+
+    <!-- Ambient particle background -->
+    <div id="bg-particles"></div>
 
     <!-- Damage number layer -->
     <div id="damage-layer"></div>
@@ -952,5 +965,26 @@
 
     <!-- Main game module -->
     <script type="module" src="src/main.js"></script>
+<script>
+// Ambient particle background — subtle floating dots
+(function() {
+    const container = document.getElementById('bg-particles');
+    if (!container) return;
+    for (let i = 0; i < 30; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'bg-particle';
+        const size = Math.random() * 3 + 1;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.left = Math.random() * 100 + '%';
+        dot.style.background = Math.random() > 0.5
+            ? 'rgba(240, 192, 64, 0.5)'
+            : 'rgba(78, 204, 163, 0.4)';
+        dot.style.animationDuration = (Math.random() * 12 + 8) + 's';
+        dot.style.animationDelay = (Math.random() * 10) + 's';
+        container.appendChild(dot);
+    }
+})();
+</script>
 </body>
 </html>
