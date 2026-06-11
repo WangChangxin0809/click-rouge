@@ -15,9 +15,10 @@ import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
 import { updateDifficulty } from './systems/difficulty-system.js';
 import { updateCombatSystem } from './systems/combat-system.js';
 import { initEconomySystem, updateEconomySystem } from './systems/economy-system.js';
-import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstHeal, triggerScreenFlash, updateScreenFlash } from './rendering/fx-renderer.js';
+import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstFreeze, burstHeal, burstPoison, triggerScreenFlash, updateScreenFlash } from './rendering/fx-renderer.js';
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
+import { initBGM, startBGM, stopBGM, resumeBGM } from './audio/bgm.js';
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
 import { generateRewards, generateMiniRewards, applyReward } from './systems/reward-system.js';
 import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
@@ -211,6 +212,7 @@ function updateHudDom() {
  * @param {MouseEvent} e
  */
 function handleCanvasClick(e) {
+    resumeBGM();
     if (STATE.gameStatus !== 'playing') return;
 
     const rect = canvas.getBoundingClientRect();
@@ -341,7 +343,7 @@ function startGame(config = {}) {
             };
         }
     }
-    initSpawnSystem(); initEconomySystem(); initSkillSystem(); clearProjectiles(); initAudio();
+    initSpawnSystem(); initEconomySystem(); initSkillSystem(); clearProjectiles(); initAudio(); initBGM(); startBGM();
     recalculateStats();
     document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
     startScreen.classList.add('hidden'); gameoverScreen.classList.add('hidden');
@@ -350,6 +352,7 @@ function startGame(config = {}) {
 }
 
 function endGame() {
+    stopBGM();
     gameLoop.stop();
     STATE.gameStatus = 'gameOver';
     var s = { gold: STATE.player.gold, wave: STATE.maxWaveReached, kills: STATE.killCount, bossKills: STATE._bossKills || 0, elapsedTime: STATE.elapsedTime, levelId: STATE._selectedLevelId || 1 };
@@ -361,10 +364,12 @@ function endGame() {
 function togglePause() {
     if (STATE.gameStatus === 'paused') {
         STATE.gameStatus = 'playing';
+        startBGM();
         pauseOverlay.classList.add('hidden');
         gameLoop.start();
     } else if (STATE.gameStatus === 'playing') {
         STATE.gameStatus = 'paused';
+        stopBGM();
         gameLoop.stop();
         pauseOverlay.classList.remove('hidden');
     }
@@ -435,6 +440,29 @@ events.on('skill:thunder', (_payload) => {
     // Burst from the centre of the design-resolution screen
     burstThunder(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
     triggerScreenFlash('#ffff00', 0.25, 0.15);
+});
+
+// Freeze — blue screen flash + ice burst from center
+events.on('skill:freeze', (payload) => {
+    burstFreeze(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+    triggerScreenFlash('#4488ff', 0.3, 0.2);
+});
+
+// Poison — purple screen tint + burst
+events.on('skill:poison_blade', (_payload) => {
+    burstPoison(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+    triggerScreenFlash('#8844cc', 0.15, 0.15);
+});
+
+// Berserk — red screen flash (anger/rage effect)
+events.on('skill:berserk', (_payload) => {
+    triggerScreenFlash('#ff4422', 0.25, 0.2);
+    triggerShake(4, 0.08);
+});
+
+// Gold rush — gold sparkle flash
+events.on('skill:gold_rush', (_payload) => {
+    triggerScreenFlash('#ffd700', 0.2, 0.15);
 });
 
 // Boss spawn — screen flash red + big shake for dramatic entrance
