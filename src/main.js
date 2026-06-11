@@ -32,13 +32,7 @@ import { BOSS_TYPES } from './data/boss-definitions.js';
 import { initMainMenu, showMainMenu } from './ui/main-menu.js';
 import { initLevelSelect, showLevelSelect } from './ui/level-select.js';
 import { initShopPanel, showShopPanel } from './ui/shop-panel.js';
-import { initLoadoutPanel, showLoadoutPanel } from './ui/loadout-panel.js';
-import { initSettlementPanel, showSettlement, cacheRunConfig } from './ui/settlement-panel.js';
-import { loadMeta, recordRunComplete, getItemLevel } from './systems/meta-progression.js';
-import { LEVELS } from './data/level-config.js';
-import { SKILLS } from './data/skill-data.js';
-import { scaleStats } from './data/level-scaling.js';
-import { createFollower } from './entities/follower.js';
+import { loadMeta } from './systems/meta-progression.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -276,14 +270,38 @@ function startGame(config = {}) {
         STATE._selectedLevelId = config.levelId;
         STATE.levelConfig = LEVELS[config.levelId] || null;
     }
-    initSpawnSystem();
-    initEconomySystem();
-    initSkillSystem();
-    clearProjectiles();
-    initAudio();
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    startScreen.classList.add('hidden');
-    gameoverScreen.classList.add('hidden');
+    if (config.skills && config.skills.length > 0) {
+        STATE.player.activeSkills = [];
+        for (const typeId of config.skills) {
+            const def = SKILLS[typeId];
+            if (!def) continue;
+            const level = getItemLevel('skill', typeId) || 1;
+            const scaled = scaleStats(def.base, def.perLevel, level);
+            STATE.player.activeSkills.push({
+                id: 'skill_' + typeId, typeId, name: def.label,
+                description: def.description + ' (Lv.' + level + ')',
+                cooldown: scaled.cooldown || def.cooldown, level,
+                _cooldownRemaining: 0, _cooldownTotal: 0,
+            });
+        }
+        setSkillSlots(STATE.player.activeSkills);
+    }
+    if (config.followers && config.followers.length > 0) {
+        STATE.player.activeFollowers = [];
+        for (const typeId of config.followers) {
+            const f = createFollower(typeId, {}, STATE.player.activeFollowers.length, config.followers.length);
+            if (f) STATE.player.activeFollowers.push(f);
+        }
+    }
+    if (config.equipment) {
+        const e = config.equipment;
+        if (e.weapon) STATE.player.equipSlots.weapon = { typeId: e.weapon, level: getItemLevel('equip', e.weapon) || 1 };
+        if (e.armor) STATE.player.equipSlots.armor = { typeId: e.armor, level: getItemLevel('equip', e.armor) || 1 };
+        if (e.accessory) STATE.player.equipSlots.accessory = { typeId: e.accessory, level: getItemLevel('equip', e.accessory) || 1 };
+    }
+    initSpawnSystem(); initEconomySystem(); initSkillSystem(); clearProjectiles(); initAudio();
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    startScreen.classList.add('hidden'); gameoverScreen.classList.add('hidden');
     gameLoop.start();
     events.emit('game:started', null);
 }
@@ -291,19 +309,203 @@ function startGame(config = {}) {
 function endGame() {
     gameLoop.stop();
     STATE.gameStatus = 'gameOver';
-    const stats = {
-        gold: STATE.player.gold, wave: STATE.maxWaveReached,
-        kills: STATE.killCount, bossKills: STATE._bossKills || 0,
-        elapsedTime: STATE.elapsedTime, levelId: STATE._selectedLevelId || 1,
-    };
-    recordRunComplete(stats);
-    showSettlement(stats, _lastStartConfig || {});
-    startScreen.classList.add('hidden');
-    gameoverScreen.classList.add('hidden');
+    var s = { gold: STATE.player.gold, wave: STATE.maxWaveReached, kills: STATE.killCount, bossKills: STATE._bossKills || 0, elapsedTime: STATE.elapsedTime, levelId: STATE._selectedLevelId || 1 };
+    recordRunComplete(s);
+    showSettlement(s, _lastStartConfig || {});
+    startScreen.classList.add('hidden'); gameoverScreen.classList.add('hidden');
 }
 
-// Meta event listeners
-events.on('loadout:confirmed', (config) => startGame(config));
-events.on('settlement:replay', (config) => startGame(config));
+events.on('loadout:confirmed', function(c) { startGame(c); });
+events.on('settlement:replay', function(c) { startGame(c); });
 
 
+
+// ---------------------------------------------------------------------------
+// Button bindings
+// ---------------------------------------------------------------------------
+
+btnStart.addEventListener('click', startGame);
+btnRestart.addEventListener('click', startGame);
+
+// ---------------------------------------------------------------------------
+// EventBus listeners (game-level)
+// ---------------------------------------------------------------------------
+
+// Combat → particles + audio + screen shake + damage numbers
+events.on('enemy:hit', (payload) => {
+    burstHit(payload.position.x, payload.position.y);
+    showDamageNumber(payload.position.x, payload.position.y, payload.damage, payload.isCrit);
+    if (payload.isCrit) {
+        burstCrit(payload.position.x, payload.position.y);
+        playCrit();
+        triggerShake(4, 0.1);
+    } else {
+        playHit();
+        triggerShake(2, 0.05);
+    }
+});
+
+events.on('enemy:died', (payload) => {
+    burstDeath(payload.enemy.x, payload.enemy.y, payload.enemy.color);
+    showGoldNumber(payload.enemy.x, payload.enemy.y, payload.enemy.gold);
+    playDeath();
+    triggerShake(8, 0.2);
+});
+
+// Click miss feedback — when player clicks on empty space
+events.on('click:miss', (payload) => {
+    showMissText(payload.x, payload.y);
+});
+
+// Player damage feedback — screen shake on hit
+events.on('player:damaged', (_payload) => {
+    triggerShake(6, 0.15);
+});
+
+// Notification log events
+events.on('game:started', () => addNotification('游戏开始', 'system'));
+events.on('wave:start', (p) => addNotification(`第 ${p.wave} 波`, 'system'));
+events.on('enemy:spawned', (e) => { if (e.isBoss) addNotification(`${(ENEMY_TYPES[e.typeId]?.name) || e.typeId || '敌人'} 出现了！`, 'boss'); });
+events.on('boss:died', (boss) => addNotification(`${(BOSS_TYPES[boss.typeId]?.name) || boss.typeId || 'Boss'} 被击败！`, 'reward'));
+events.on('skill:activated', (p) => addNotification(`${p.name}！`, 'skill'));
+
+// Skill VFX — thunder strike: lightning burst + yellow flash
+events.on('skill:thunder', (_payload) => {
+    // Burst from the centre of the design-resolution screen
+    burstThunder(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+    triggerScreenFlash('#ffff00', 0.25, 0.15);
+});
+
+// Boss spawn — screen flash red + big shake for dramatic entrance
+events.on('boss:spawned', (_payload) => {
+    triggerScreenFlash('#ff2222', 0.35, 0.25);
+    triggerShake(12, 0.3);
+});
+
+// Player healed — green rising particles (no screen flash for subtle feedback)
+events.on('player:healed', (_payload) => {
+    burstHeal(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+});
+
+// Skill activation from keyboard hotkeys
+events.on('skill:activate', (payload) => {
+    activateSkill(payload.slot);
+});
+
+// Listen for game-over trigger from gameplay systems
+events.on('game:triggerGameOver', () => {
+    endGame();
+});
+
+// ---------------------------------------------------------------------------
+// Meta / Navigation event listeners
+// ---------------------------------------------------------------------------
+
+// Screen navigation (main menu -> level select -> etc.)
+events.on('menu:navigate', (payload) => {
+    if (!payload || !payload.screen) return;
+    const screenMap = {
+        lobby: 'main-menu',
+        levelSelect: 'level-select',
+        shop: 'shop-panel',
+        loadout: 'loadout-panel',
+        settlement: 'settlement-panel',
+    };
+    const screenId = screenMap[payload.screen] || payload.screen;
+    showScreen(screenId);
+});
+
+// Level selected — store levelId and navigate to loadout (placeholder)
+events.on('level:selected', (payload) => {
+    if (!payload || payload.levelId == null) return;
+    console.log('[ClickRouge] Level selected:', payload.levelId);
+    // Store selected level for later use by game start
+    STATE._selectedLevelId = payload.levelId;
+    // For now, navigate to loadout placeholder
+    showScreen('loadout-panel');
+});
+
+// ---------------------------------------------------------------------------
+// Reward system wiring — real boss defeated → reward selection
+// ---------------------------------------------------------------------------
+
+/**
+ * Boss defeated → pause gameplay and show reward selection panel.
+ * Triggered by boss:died event from spawn-system (real boss death).
+ */
+events.on('boss:died', (payload) => {
+    // Guard: only trigger reward picking during active gameplay
+    if (STATE.gameStatus !== 'playing') return;
+
+    STATE.gameStatus = 'rewardPicking';
+
+    const rewards = generateRewards(payload.tier);
+    showRewardPanel(rewards, (reward) => {
+        applyReward(reward);
+
+        // Refresh skill bar if a skill reward was picked
+        if (STATE.player.activeSkills && STATE.player.activeSkills.length > 0) {
+            setSkillSlots(STATE.player.activeSkills);
+        }
+
+        STATE.gameStatus = 'playing';
+    });
+});
+
+// Kill-based mini reward — 2-choose-1 upgrade during combat
+events.on('reward:trigger', (payload) => {
+    if (STATE.gameStatus !== 'playing') return;
+    STATE.gameStatus = 'rewardPicking';
+    const rewards = generateMiniRewards(payload.tier);
+    showRewardPanel(rewards, (reward) => {
+        applyReward(reward);
+
+        // Refresh skill bar if a skill reward was picked
+        if (STATE.player.activeSkills && STATE.player.activeSkills.length > 0) {
+            setSkillSlots(STATE.player.activeSkills);
+        }
+
+        STATE.gameStatus = 'playing';
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Initial state — Meta Phase B: main menu + level select
+// ---------------------------------------------------------------------------
+
+// Load meta-progression data (must run before UI init so stats are available)
+loadMeta();
+
+// Initialise navigation UI
+initMainMenu();
+initLevelSelect();
+initShopPanel();
+initLoadoutPanel();
+initSettlementPanel();
+
+// Hide the old start screen (preserved for backwards compat during transition)
+startScreen.classList.add('hidden');
+gameoverScreen.classList.add('hidden');
+
+// Show the main menu as the first screen
+showScreen('main-menu');
+
+// Render initial idle frame (canvas stays in background)
+renderer.clear();
+renderer.render(STATE);
+
+// Preload sprites in background while main menu is showing
+(async () => {
+    try {
+        const resp = await fetch('assets/sprites/manifest.json');
+        if (resp.ok) {
+            const manifest = await resp.json();
+            await preloadSprites(manifest);
+            console.log('[ClickRouge] Sprites preloaded');
+        }
+    } catch (e) {
+        console.warn('[ClickRouge] Sprite preload failed, using procedural fallback:', e.message);
+    }
+})();
+
+console.log('[ClickRouge] Bootstrap complete. Main menu shown.');
