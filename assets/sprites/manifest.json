@@ -1,0 +1,9 @@
+{
+  "slime":     { "file": "slime/plat_slime_spritesheet.png",  "frameW": 74,  "frameH": 86,  "frames": 4, "fps": 4, "layout": "horizontal" },
+  "bat":       { "file": "bat/plat_bat_spritesheet.png",      "frameW": 95,  "frameH": 138, "frames": 4, "fps": 6, "layout": "horizontal" },
+  "ghost":     { "file": "ghost/plat_ghost_spritesheet.png",  "frameW": 75,  "frameH": 138, "frames": 2, "fps": 3, "layout": "horizontal" },
+  "golem":     { "file": "golem/golem_rock.png",              "frameW": 32,  "frameH": 32,  "frames": 1, "fps": 1 },
+  "fire_skull":{ "file": "fireskull/mon2_sprite_base.png",    "frameW": 128, "frameH": 128, "frames": 1, "fps": 1 },
+  "boss_sk":   { "file": "boss/skeleton_king_spritesheet.png","frameW": 138, "frameH": 138, "frames": 4, "fps": 4, "layout": "horizontal" },
+  "boss_dragon":{ "file": "boss/dragons_spritesheet.png",     "frameW": 180, "frameH": 50,  "frames": 1, "fps": 1 }
+}

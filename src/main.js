@@ -10,6 +10,7 @@ import { GameLoop } from './core/game-loop.js';
 import { STATE } from './core/game-state.js';
 import { events } from './core/event-bus.js';
 import { CanvasRenderer, DESIGN_WIDTH, DESIGN_HEIGHT } from './rendering/canvas-renderer.js';
+import { preloadSprites } from './rendering/sprite-loader.js';
 import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
 import { updateDifficulty } from './systems/difficulty-system.js';
 import { updateCombatSystem } from './systems/combat-system.js';
@@ -388,5 +389,19 @@ gameoverScreen.classList.add('hidden');
 // Render initial idle frame
 renderer.clear();
 renderer.render(STATE);
+
+// Preload sprites in background while start screen is showing
+(async () => {
+    try {
+        const resp = await fetch('assets/sprites/manifest.json');
+        if (resp.ok) {
+            const manifest = await resp.json();
+            await preloadSprites(manifest);
+            console.log('[ClickRouge] Sprites preloaded');
+        }
+    } catch (e) {
+        console.warn('[ClickRouge] Sprite preload failed, using procedural fallback:', e.message);
+    }
+})();
 
 console.log('[ClickRouge] Bootstrap complete. Waiting for player to start.');
