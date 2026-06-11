@@ -42,6 +42,83 @@ const EQUIP_SLOT_LABELS = {
 };
 
 // ---------------------------------------------------------------------------
+// CSS injection (loadout-specific styles)
+// ---------------------------------------------------------------------------
+
+/**
+ * Inject loadout-panel CSS into the document head (idempotent).
+ */
+function _injectStyles() {
+    if (document.getElementById('loadout-panel-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'loadout-panel-styles';
+    style.textContent = `
+        .loadout-top-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0;
+            width: 100%; max-width: 900px;
+        }
+        .loadout-back-btn {
+            font-size: 14px; font-family: inherit; color: #b0b0c0;
+            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px; padding: 6px 14px; cursor: pointer; white-space: nowrap;
+        }
+        .loadout-back-btn:hover { background: rgba(255, 255, 255, 0.16); color: #e0e0e0; }
+        .loadout-title {
+            font-size: 22px; color: #f0c040; letter-spacing: 2px; margin: 0; white-space: nowrap;
+        }
+        .loadout-content {
+            flex: 1; overflow-y: auto; padding: 16px 20px; width: 100%; max-width: 900px;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent;
+        }
+        .loadout-section { margin-bottom: 20px; }
+        .loadout-section-header {
+            font-size: 16px; color: #e0e0e0; margin-bottom: 10px; letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;
+        }
+        .loadout-card-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+        .loadout-card {
+            position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+            width: 130px; padding: 12px 8px; background: rgba(22,22,38,0.9);
+            border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; cursor: pointer;
+            transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+        }
+        .loadout-card:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
+        .loadout-card-selected {
+            border-color: #4ecca3 !important;
+            box-shadow: 0 0 14px rgba(78,204,163,0.3);
+        }
+        .loadout-card-checkmark {
+            position: absolute; top: 4px; right: 6px; font-size: 14px; color: #4ecca3; font-weight: bold;
+        }
+        .loadout-card-name {
+            font-size: 13px; color: #e0e0e0; font-weight: bold; text-align: center; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; max-width: 110px;
+        }
+        .loadout-card-level-1 { font-size: 10px; color: #e0e0e0; }
+        .loadout-card-level-2 { font-size: 10px; color: #5b9bd5; }
+        .loadout-card-level-3 { font-size: 10px; color: #b07ce0; }
+        .loadout-card-level-4 { font-size: 10px; color: #ffd700; }
+        .loadout-equip-row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .loadout-equip-slot { display: flex; align-items: center; gap: 8px; }
+        .loadout-equip-slot-label { font-size: 14px; color: #8888a0; white-space: nowrap; }
+        .loadout-equip-none { font-size: 13px; color: #555568; font-style: italic; }
+        .loadout-equip-card { width: auto; min-width: 100px; flex-direction: row; padding: 8px 12px; }
+        .loadout-empty-msg { text-align: center; color: #666680; padding: 20px; font-size: 13px; }
+        .loadout-start-btn { margin-left: auto; }
+
+        @media (max-width: 480px) {
+            .loadout-title { font-size: 16px; }
+            .loadout-card { width: 100px; padding: 8px 6px; }
+            .loadout-card-name { font-size: 11px; max-width: 85px; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ---------------------------------------------------------------------------
 // Internal state (closure)
 // ---------------------------------------------------------------------------
 
@@ -69,6 +146,8 @@ let _panelEl = null;
  * Safe to call multiple times (idempotent via _panelEl check).
  */
 export function initLoadoutPanel() {
+    _injectStyles();
+
     if (_panelEl) return;
 
     _panelEl = document.getElementById('loadout-panel');
@@ -133,7 +212,7 @@ function _buildPanel() {
     backBtn.textContent = '← 返回';
     backBtn.addEventListener('click', () => {
         _hideLoadoutPanel();
-        events.emit('loadout:cancelled', null);
+        events.emit('menu:navigate', { screen: 'levelSelect' });
     });
 
     const title = document.createElement('h2');

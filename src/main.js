@@ -152,8 +152,8 @@ function showScreen(name) {
     if (name === 'main-menu') showMainMenu();
     if (name === 'level-select') showLevelSelect();
     if (name === 'shop-panel') showShopPanel();
-    if (name === 'loadout-panel') { /* TODO: loadout UI */ }
-    if (name === 'settlement-panel') { /* TODO: settlement UI */ }
+    if (name === 'loadout-panel') showLoadoutPanel(STATE._selectedLevelId);
+    if (name === 'settlement-panel') { /* shown by endGame → showSettlement */ }
 }
 
 // ---------------------------------------------------------------------------

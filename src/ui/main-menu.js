@@ -142,6 +142,5 @@ export function initMainMenu() {
  * hides other .screen elements.
  */
 export function showMainMenu() {
-    _render();
     _refreshStats();
 }
