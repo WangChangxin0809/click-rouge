@@ -24,9 +24,6 @@ import { events } from '../core/event-bus.js';
 /** @type {Array<{id: string, name: string, cooldown: number, icon: string, stack: number}>} */
 let _skillSlots = [];
 
-/** @type {Object<number, number>} Map of slot index (1-4) → last use timestamp (STATE.elapsedTime) */
-const _cooldownTimers = {};
-
 /** @type {Array<HTMLElement>} Cached slot DOM elements */
 let _slotEls = null;
 
@@ -73,15 +70,9 @@ function _iconForSkill(typeId) {
  * @param {Array<Object>} skills - Array of skill objects from STATE.player.activeSkills
  */
 export function setSkillSlots(skills) {
-    // Reset cooldown timers when skills change
-    for (let i = 1; i <= MAX_SLOTS; i++) {
-        delete _cooldownTimers[i];
-    }
-
     _skillSlots = skills.slice(0, MAX_SLOTS).map((skill) => ({
         id: skill.id,
         name: skill.name,
-        cooldown: (skill.stats && skill.stats.cooldown) ? skill.stats.cooldown : 5,
         icon: _iconForSkill(skill.typeId),
         stack: skill.stack || 1,
     }));
@@ -100,24 +91,28 @@ export function updateSkillBar() {
     }
     if (!_slotEls) return;
 
-    const now = STATE.elapsedTime;
+    const skills = STATE.player.activeSkills;
 
     for (let i = 0; i < MAX_SLOTS; i++) {
         const slotIndex = i + 1;
         const slotEl = _slotEls[i];
         if (!slotEl) continue;
 
-        const lastUsed = _cooldownTimers[slotIndex] || 0;
-        const skill = _skillSlots[i] || null;
+        const stateSkill = (skills && skills[i]) || null;
+        const uiSkill = _skillSlots[i] || null;
 
         let cooldownFraction = 0;
         let onCooldown = false;
+        let cooldownRemaining = 0;
+        let cooldownTotal = 0;
 
-        if (skill && skill.cooldown > 0 && lastUsed > 0) {
-            const elapsed = now - lastUsed;
-            if (elapsed < skill.cooldown) {
+        // Read cooldown from the authoritative skill object in game state
+        if (stateSkill && stateSkill._cooldownRemaining > 0) {
+            cooldownRemaining = stateSkill._cooldownRemaining;
+            cooldownTotal = stateSkill._cooldownTotal || 0;
+            if (cooldownTotal > 0) {
                 onCooldown = true;
-                cooldownFraction = 1 - (elapsed / skill.cooldown);
+                cooldownFraction = cooldownRemaining / cooldownTotal;
             }
         }
 
@@ -131,11 +126,11 @@ export function updateSkillBar() {
         }
 
         // Update aria for accessibility
-        if (onCooldown) {
+        if (onCooldown && uiSkill) {
             slotEl.setAttribute('aria-label',
-                `${skill.name} - 冷却中 ${Math.ceil(cooldownFraction * skill.cooldown)}秒`);
-        } else if (skill) {
-            slotEl.setAttribute('aria-label', `${skill.name} - 就绪`);
+                `${uiSkill.name} - 冷却中 ${Math.ceil(cooldownRemaining)}秒`);
+        } else if (uiSkill) {
+            slotEl.setAttribute('aria-label', `${uiSkill.name} - 就绪`);
         } else {
             slotEl.setAttribute('aria-label', '空技能槽');
         }
@@ -186,14 +181,17 @@ function _renderSlots() {
                 slotEl.appendChild(nameEl);
             }
 
-            // Level badge — show Lv.N when stack > 1
+            // Level badge — show Lv.N when stack > 1, with level-based color
             const existingBadge = slotEl.querySelector('.skill-level-badge');
             if (skill.stack > 1) {
+                const levelClamped = Math.min(skill.stack, 4);
+                const levelClass = `skill-level-badge skill-level-${levelClamped}`;
                 if (existingBadge) {
                     existingBadge.textContent = `Lv.${skill.stack}`;
+                    existingBadge.className = levelClass;
                 } else {
                     const badgeEl = document.createElement('span');
-                    badgeEl.className = 'skill-level-badge';
+                    badgeEl.className = levelClass;
                     badgeEl.textContent = `Lv.${skill.stack}`;
                     slotEl.appendChild(badgeEl);
                 }
@@ -227,25 +225,6 @@ function _cacheSlotElements() {
 // ---------------------------------------------------------------------------
 // Event listeners
 // ---------------------------------------------------------------------------
-
-/**
- * Listen for skill activation to record cooldown timer.
- */
-events.on('skill:activate', (payload) => {
-    const slotIndex = payload.slot;
-    if (slotIndex < 1 || slotIndex > MAX_SLOTS) return;
-
-    const skill = _skillSlots[slotIndex - 1];
-    if (!skill) return;
-
-    // Check if on cooldown
-    const lastUsed = _cooldownTimers[slotIndex] || 0;
-    const now = STATE.elapsedTime;
-    if (now - lastUsed < skill.cooldown) return; // still on cooldown, ignore
-
-    // Record activation time
-    _cooldownTimers[slotIndex] = STATE.elapsedTime;
-});
 
 /**
  * Delegate click handling for the skill bar. Each .skill-slot has data-key="1..4".

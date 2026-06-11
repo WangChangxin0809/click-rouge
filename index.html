@@ -313,7 +313,6 @@
             right: 2px;
             font-size: 9px;
             font-weight: bold;
-            color: #f0c040;
             background: rgba(0, 0, 0, 0.75);
             padding: 1px 5px;
             border-radius: 3px;
@@ -322,6 +321,12 @@
             letter-spacing: 0.5px;
             pointer-events: none;
         }
+
+        /* Skill level colors — Lv.1 white, Lv.2 blue, Lv.3 purple, Lv.4+ gold */
+        .skill-level-1 { color: #e0e0e0; }
+        .skill-level-2 { color: #5b9bd5; }
+        .skill-level-3 { color: #b07ce0; }
+        .skill-level-4 { color: #ffd700; }
 
         /* Cooldown overlay — fills from top to bottom */
         .skill-cooldown-overlay {
@@ -411,6 +416,22 @@
             color: #f0c040;
             white-space: nowrap;
         }
+
+        .equip-level {
+            font-size: 9px;
+            font-weight: bold;
+            padding: 1px 5px;
+            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.6);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Equipment level colors — same as unified level system */
+        .equip-level-1 { color: #e0e0e0; }
+        .equip-level-2 { color: #5b9bd5; }
+        .equip-level-3 { color: #b07ce0; }
+        .equip-level-4 { color: #ffd700; }
 
         /* === Modal Layer (z-index: 100) === */
         #modal-overlay {
@@ -624,8 +645,8 @@
             width: 100%;
         }
 
-        /* Tier quality badge — position top-right of card */
-        .reward-card-tier {
+        /* Unified level badge — position top-right of card */
+        .reward-card-level {
             position: absolute;
             top: 10px;
             right: 10px;
@@ -637,29 +658,29 @@
             line-height: 1.4;
         }
 
-        /* T1 — Common (white) */
-        .reward-card-tier-1 {
+        /* Lv.1 — white */
+        .reward-card-level-1 {
             color: #e0e0e0;
             background: rgba(255, 255, 255, 0.10);
             border: 1px solid rgba(255, 255, 255, 0.20);
         }
 
-        /* T2 — Rare (blue) */
-        .reward-card-tier-2 {
+        /* Lv.2 — blue */
+        .reward-card-level-2 {
             color: #5b9bd5;
             background: rgba(91, 155, 213, 0.12);
             border: 1px solid rgba(91, 155, 213, 0.28);
         }
 
-        /* T3 — Epic (purple) */
-        .reward-card-tier-3 {
+        /* Lv.3 — purple */
+        .reward-card-level-3 {
             color: #b07ce0;
             background: rgba(176, 124, 224, 0.12);
             border: 1px solid rgba(176, 124, 224, 0.28);
         }
 
-        /* T4 — Legendary (gold) */
-        .reward-card-tier-4 {
+        /* Lv.4+ — gold */
+        .reward-card-level-4 {
             color: #ffd700;
             background: rgba(255, 215, 0, 0.12);
             border: 1px solid rgba(255, 215, 0, 0.32);
