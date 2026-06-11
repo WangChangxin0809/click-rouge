@@ -32,7 +32,13 @@ import { BOSS_TYPES } from './data/boss-definitions.js';
 import { initMainMenu, showMainMenu } from './ui/main-menu.js';
 import { initLevelSelect, showLevelSelect } from './ui/level-select.js';
 import { initShopPanel, showShopPanel } from './ui/shop-panel.js';
-import { loadMeta } from './systems/meta-progression.js';
+import { initLoadoutPanel, showLoadoutPanel } from './ui/loadout-panel.js';
+import { initSettlementPanel, showSettlement, cacheRunConfig } from './ui/settlement-panel.js';
+import { loadMeta, recordRunComplete, getItemLevel } from './systems/meta-progression.js';
+import { LEVELS } from './data/level-config.js';
+import { SKILLS } from './data/skill-data.js';
+import { scaleStats } from './data/level-scaling.js';
+import { createFollower } from './entities/follower.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
