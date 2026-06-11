@@ -34,32 +34,30 @@ let _slotEls = null;
 const MAX_SLOTS = 4;
 
 // ---------------------------------------------------------------------------
-// Icon mapping (based on skill name)
+// Icon mapping (based on skill typeId)
 // ---------------------------------------------------------------------------
 
 /** @type {Object<string, string>} */
 const SKILL_ICONS = {
-    '火球术': '\u{1F525}',      // fire
-    '雷电链': '⚡',        // high voltage
-    '冰霜新星': '❄️', // snowflake
-    '毒雾': '\u{1F342}',       // mushroom (poison vibe)
-    '神圣之光': '✨',      // sparkles
-    '暗影步': '\u{1F300}',     // cyclone
-    '旋风斩': '\u{1F32A}',     // tornado
-    '大地震击': '\u{1F4A5}',    // explosion
+    'thunder_strike': '⚡',
+    'freeze': '❄',
+    'berserk': '🔥',
+    'heal': '💚',
+    'poison_blade': '☠',
+    'gold_rush': '💰',
 };
 
 /**
- * Pick an icon for a given skill name.
- * Falls back to the first character of the name if no mapping exists.
+ * Pick an icon for a given skill typeId.
+ * Falls back to the first character of the id if no mapping exists.
  *
- * @param {string} name
+ * @param {string} typeId
  * @returns {string}
  */
-function _iconForSkill(name) {
-    if (SKILL_ICONS[name]) return SKILL_ICONS[name];
+function _iconForSkill(typeId) {
+    if (SKILL_ICONS[typeId]) return SKILL_ICONS[typeId];
     // Fallback: use first character as icon text
-    return name ? name.charAt(0) : '?';
+    return typeId ? typeId.charAt(0).toUpperCase() : '?';
 }
 
 // ---------------------------------------------------------------------------
@@ -84,7 +82,7 @@ export function setSkillSlots(skills) {
         id: skill.id,
         name: skill.name,
         cooldown: (skill.stats && skill.stats.cooldown) ? skill.stats.cooldown : 5,
-        icon: _iconForSkill(skill.name),
+        icon: _iconForSkill(skill.typeId),
         stack: skill.stack || 1,
     }));
 
