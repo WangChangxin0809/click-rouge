@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "Pixel Art Animator": {
+      "source": "willibrandon/pixel-plugin",
+      "sourceType": "github",
+      "skillPath": "skills/pixel-art-animator/SKILL.md",
+      "computedHash": "4823747009715bf66bed4befbd6ff6645bbcde588c25f958febf7a7fc073f9e6"
+    },
+    "Pixel Art Professional": {
+      "source": "willibrandon/pixel-plugin",
+      "sourceType": "github",
+      "skillPath": "skills/pixel-art-professional/SKILL.md",
+      "computedHash": "35f44f01cf688f7f5a6223aa2c6cdd1dfb4278668cb7037db32a350f3951c2e9"
+    },
+    "game-assets": {
+      "source": "opusgamelabs/game-creator",
+      "sourceType": "github",
+      "skillPath": "skills/game-assets/SKILL.md",
+      "computedHash": "11874de3054e82b21db3b090e45f65555b7540b22b8de98f692a38d7324acda8"
+    },
+    "pixel-art": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "skillPath": "skills/pixel-art/SKILL.md",
+      "computedHash": "6ac3b2f6dde17855ddd7a9c93adbf4ff0b4ecb3c95118c1fba4821d7f6e1054b"
+    }
+  }
+}

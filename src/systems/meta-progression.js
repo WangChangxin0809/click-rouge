@@ -69,7 +69,7 @@ const STAT_AMOUNTS = {
 
 const DEFAULT_META = {
     version: 1,
-    permanentGold: 5000,
+    permanentGold: 10000,
     unlockedLevels: [1],
     completedLevels: [],
     statUpgrades: {

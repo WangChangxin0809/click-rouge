@@ -1,0 +1,56 @@
+{
+  "textures": {
+    "stone_wall": {
+      "file": "stone_wall.jpg",
+      "size": "512x512",
+      "format": "JPEG",
+      "license": "CC0",
+      "source": "https://opengameart.org/content/rpg-stone-wall-texture",
+      "author": "ForKotLow",
+      "purpose": "Main menu background (dark stone wall)",
+      "tileable": true
+    },
+    "parchment": {
+      "file": "parchment.png",
+      "size": "256x256",
+      "format": "PNG",
+      "license": "CC0 (procedurally generated)",
+      "source": "Generated via Canvas 2D procedural noise",
+      "author": "Auto-generated",
+      "purpose": "Level select background (parchment/old paper)",
+      "tileable": true
+    },
+    "wood_dark": {
+      "file": "wood_dark.png",
+      "size": "256x256",
+      "format": "PNG",
+      "license": "CC0",
+      "source": "https://opengameart.org/content/wood-grain-tileable",
+      "author": "Teh_Bucket",
+      "purpose": "Shop background (dark wood grain)",
+      "tileable": true
+    },
+    "metal_grey": {
+      "file": "metal_grey.jpg",
+      "size": "256x256",
+      "format": "JPEG",
+      "license": "CC0",
+      "source": "https://opengameart.org/content/grey-metal",
+      "author": "mafon2",
+      "purpose": "Equipment configuration background (metal/iron)",
+      "tileable": true
+    },
+    "cloth_scroll": {
+      "file": "cloth_scroll.png",
+      "size": "256x256",
+      "format": "PNG",
+      "license": "CC0 (procedurally generated)",
+      "source": "Generated via Canvas 2D weave pattern",
+      "author": "Auto-generated",
+      "purpose": "Results/settlement panel background (old scroll/cloth)",
+      "tileable": true
+    }
+  },
+  "note": "Textures marked 'procedurally generated' were created using JavaScript Canvas 2D pixel manipulation with tileable noise and weave algorithms. They are 100% original and CC0.",
+  "generated_at": "2026-06-11"
+}

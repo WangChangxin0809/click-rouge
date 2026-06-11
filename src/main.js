@@ -34,7 +34,7 @@ import { initLevelSelect, showLevelSelect } from './ui/level-select.js';
 import { initShopPanel, showShopPanel } from './ui/shop-panel.js';
 import { initLoadoutPanel, showLoadoutPanel } from './ui/loadout-panel.js';
 import { initSettlementPanel, showSettlement, cacheRunConfig } from './ui/settlement-panel.js';
-import { loadMeta, recordRunComplete, getItemLevel } from './systems/meta-progression.js';
+import { loadMeta, recordRunComplete, getItemLevel, unlockLevel } from './systems/meta-progression.js';
 import { LEVELS } from './data/level-config.js';
 import { SKILLS } from './data/skill-data.js';
 import { scaleStats } from './data/level-scaling.js';
@@ -282,6 +282,7 @@ function startGame(config = {}) {
     STATE.gameStatus = 'playing';
     STATE.clickQueue = [];
     STATE._bossKills = 0;
+    STATE._levelBossKills = 0;
     if (config.levelId) {
         STATE._selectedLevelId = config.levelId;
         STATE.levelConfig = LEVELS[config.levelId] || null;
@@ -456,6 +457,17 @@ events.on('game:triggerGameOver', () => {
     endGame();
 });
 
+events.on('game:levelComplete', (stats) => {
+    gameLoop.stop();
+    // Unlock next level if clearReward specifies it
+    const lvlCfg = STATE.levelConfig;
+    if (lvlCfg && lvlCfg.clearReward && lvlCfg.clearReward.type === 'unlock_level') {
+        unlockLevel(lvlCfg.clearReward.levelId);
+    }
+    recordRunComplete(stats);
+    showSettlement(stats, _lastStartConfig || {}, true);
+});
+
 // ---------------------------------------------------------------------------
 // Meta / Navigation event listeners
 // ---------------------------------------------------------------------------
@@ -496,8 +508,14 @@ events.on('boss:died', (payload) => {
     if (STATE.gameStatus !== 'playing') return;
 
     STATE.gameStatus = 'rewardPicking';
+    STATE._bossKills = (STATE._bossKills || 0) + 1;
+    STATE._levelBossKills = (STATE._levelBossKills || 0) + 1;
 
     const rewards = generateRewards(payload.tier);
+    const lvlCfg = STATE.levelConfig;
+    const bossesCleared = STATE._levelBossKills;
+    const targetBosses = lvlCfg ? (lvlCfg.bossesToClear || 999) : 999;
+
     showRewardPanel(rewards, (reward) => {
         applyReward(reward);
 
@@ -506,7 +524,21 @@ events.on('boss:died', (payload) => {
             setSkillSlots(STATE.player.activeSkills);
         }
 
-        STATE.gameStatus = 'playing';
+        // Check level completion
+        if (bossesCleared >= targetBosses) {
+            STATE.gameStatus = 'gameOver';
+            gameLoop.stop();
+            events.emit('game:levelComplete', {
+                levelId: STATE._selectedLevelId,
+                gold: STATE.player.gold,
+                wave: STATE.maxWaveReached,
+                kills: STATE.killCount,
+                bossKills: bossesCleared,
+                elapsedTime: STATE.elapsedTime,
+            });
+        } else {
+            STATE.gameStatus = 'playing';
+        }
     });
 });
 

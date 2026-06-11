@@ -83,7 +83,7 @@ export function initSettlementPanel() {
   });
 }
 
-export function showSettlement(stats, config) {
+export function showSettlement(stats, config, isWin) {
   _lastConfig = config;
   const panel = document.getElementById('settlement-panel');
   if (!panel) return;
@@ -101,10 +101,17 @@ export function showSettlement(stats, config) {
   const goldFromBoss = (stats.bossKills || 0) * 10;
   const totalPerm = goldFromRun + goldFromWave + goldFromBoss;
 
+  const titleText = isWin ? '关卡通关！' : '本次冒险结束';
+  const titleColor = isWin ? '#4ecca3' : '#f0c040';
+  const subtitleText = isWin ? '胜利' : '战斗报告';
+  const titleGlow = isWin
+    ? 'text-shadow: 0 0 20px rgba(78, 204, 163, 0.4);'
+    : 'text-shadow: 0 0 20px rgba(240, 192, 64, 0.3);';
+
   panel.innerHTML = `
     <div class="settlement-card">
-      <h1 class="settlement-title">本次冒险结束</h1>
-      <p class="settlement-subtitle">战斗报告</p>
+      <h1 class="settlement-title" style="color:${titleColor};${titleGlow}">${titleText}</h1>
+      <p class="settlement-subtitle">${subtitleText}</p>
 
       <div class="settlement-stat-row">
         <span class="settlement-stat-icon">&#x23F1;</span>
