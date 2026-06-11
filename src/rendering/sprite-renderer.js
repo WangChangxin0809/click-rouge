@@ -23,7 +23,7 @@
 import { STATE } from '../core/game-state.js';
 import { getSprite, hasSprite } from './sprite-loader.js';
 import { createAnimator } from './sprite-animator.js';
-import { lightenColor, darkenColor } from './enemy-renderer.js';
+import { lightenColor, darkenColor, easeOutBack } from './enemy-renderer.js';
 import { renderBosses } from './boss-renderer.js';
 
 // ---------------------------------------------------------------------------
@@ -54,7 +54,8 @@ const SPRITE_DEFS = {
 // Animation constants
 // ---------------------------------------------------------------------------
 
-const HIT_FLASH_DURATION = 0.1;
+const HIT_FLASH_DURATION = 0.15;
+const PUNCH_DURATION = 0.08;
 const FLOAT_AMPLITUDE = 3;
 const FLOAT_SPEED = 3.0;
 
@@ -163,6 +164,9 @@ function _renderSpriteEnemy(ctx, e, now) {
     const lastHit = e.lastHitTime;
     const isFlashing = (lastHit != null) && ((now - lastHit) < HIT_FLASH_DURATION);
 
+    // Scale-punch detection
+    const isPunching = (lastHit != null) && ((now - lastHit) < PUNCH_DURATION);
+
     // Float animation
     const phase = (e.id * 0.7) % (Math.PI * 2);
     const floatY = Math.sin(now * FLOAT_SPEED + phase) * FLOAT_AMPLITUDE;
@@ -172,10 +176,6 @@ function _renderSpriteEnemy(ctx, e, now) {
     const spriteScale = targetH / spriteDef.frameH;
     const drawW = spriteDef.frameW * spriteScale;
     const drawH = targetH;
-
-    // Compute draw position (centered on enemy x/y)
-    const dx = e.x - drawW / 2;
-    const dy = e.y + floatY - drawH / 2;
 
     // Get current animation frame
     const animator = _getAnimator(spriteKey);
@@ -190,13 +190,30 @@ function _renderSpriteEnemy(ctx, e, now) {
 
     ctx.save();
 
-    // Draw the sprite
+    // Translate to enemy center (enables centered scale-punch and glow)
+    ctx.translate(e.x, e.y + floatY);
+
+    // Scale punch: quick shrink-then-bounce on hit
+    if (isPunching) {
+        const punchT = (now - lastHit) / PUNCH_DURATION;
+        const punchS = 0.85 + easeOutBack(punchT) * 0.15;
+        ctx.scale(punchS, punchS);
+    }
+
+    // Red outer glow on hit (fades out during flash)
     if (isFlashing) {
-        // Hit flash: draw sprite normally, then overlay white tint
+        const flashProgress = (now - lastHit) / HIT_FLASH_DURATION;
+        ctx.shadowColor = 'rgba(255, 30, 30, 0.5)';
+        ctx.shadowBlur = 6 * (1 - flashProgress);
+    }
+
+    // Draw the sprite centered at origin
+    if (isFlashing) {
+        // Draw sprite normally
         ctx.drawImage(
             img,
             frame.sx, frame.sy, frame.sw, frame.sh,
-            dx, dy, drawW, drawH,
+            -drawW / 2, -drawH / 2, drawW, drawH,
         );
 
         // White tint overlay using source-atop
@@ -205,7 +222,7 @@ function _renderSpriteEnemy(ctx, e, now) {
         if (flashAlpha > 0) {
             ctx.globalCompositeOperation = 'source-atop';
             ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
-            ctx.fillRect(dx, dy, drawW, drawH);
+            ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
             ctx.globalCompositeOperation = 'source-over';
         }
     } else {
@@ -213,14 +230,18 @@ function _renderSpriteEnemy(ctx, e, now) {
         ctx.drawImage(
             img,
             frame.sx, frame.sy, frame.sw, frame.sh,
-            dx, dy, drawW, drawH,
+            -drawW / 2, -drawH / 2, drawW, drawH,
         );
     }
+
+    // Reset glow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
 
     ctx.restore();
 
     // ---- Health bar (below sprite) ----
-    _drawSpriteHealthBar(ctx, e, r, drawW, dy + drawH);
+    _drawSpriteHealthBar(ctx, e, r, drawW, e.y + floatY + drawH / 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -294,7 +315,7 @@ function _renderFallbackProcedural(ctx, e, now) {
     ctx.restore();
 
     // Health bar
-    const drawW = r * 2;
+    const drawW = r * 2.2;
     _drawSpriteHealthBar(ctx, e, r, drawW, e.y + floatY + r + 6);
 }
 
@@ -312,45 +333,61 @@ function _renderFallbackProcedural(ctx, e, now) {
  * @param {number} barTop — Top Y of the bar in logical pixels
  */
 function _drawSpriteHealthBar(ctx, e, r, barW, barTop) {
-    const hpRatio = e.maxHp > 0
-        ? Math.max(0, Math.min(1, e.hp / e.maxHp))
-        : 0;
-
     // If barTop is not explicitly passed (old signature), compute from r
     if (barTop === undefined) {
         barTop = e.y + r + 6;
-        barW = r * 2;
+        barW = r * 2.2;
     }
 
-    const barH = 3.5;
+    // Delayed HP display: smoothly lerp visual HP toward actual HP
+    if (e._displayHp === undefined || e._displayHp > e.maxHp) {
+        e._displayHp = e.hp;
+    }
+    e._displayHp += (e.hp - e._displayHp) * 0.12;
+    if (Math.abs(e.hp - e._displayHp) < 0.05) {
+        e._displayHp = e.hp;
+    }
+
+    const hpRatio = e.maxHp > 0
+        ? Math.max(0, Math.min(1, e._displayHp / e.maxHp))
+        : 0;
+
+    const barH = 6;
+    const borderW = 1;
     const barX = e.x - barW / 2;
     const barY = barTop;
 
     ctx.save();
 
     // Background
-    ctx.fillStyle = 'rgba(30, 5, 5, 0.7)';
+    ctx.fillStyle = 'rgba(15, 5, 5, 0.75)';
     ctx.fillRect(barX, barY, barW, barH);
 
-    // Border
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.lineWidth = 0.5;
+    // Dark border
+    ctx.strokeStyle = 'rgba(10, 0, 0, 0.9)';
+    ctx.lineWidth = borderW;
     ctx.strokeRect(barX, barY, barW, barH);
 
-    // Foreground
+    // Foreground with 4-segment colour: green > 60%, yellow 30-60%, orange 15-30%, red < 15%
     if (hpRatio > 0) {
-        if (hpRatio > 0.5) {
-            ctx.fillStyle = '#44cc44';
-        } else if (hpRatio > 0.25) {
-            ctx.fillStyle = '#cccc44';
+        let fillColor;
+        if (hpRatio > 0.6) {
+            fillColor = '#44cc44';
+        } else if (hpRatio > 0.3) {
+            fillColor = '#cccc44';
+        } else if (hpRatio > 0.15) {
+            fillColor = '#ff8844';
         } else {
-            ctx.fillStyle = '#cc4444';
+            fillColor = '#ff2222';
         }
-        ctx.fillRect(barX, barY, barW * hpRatio, barH);
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(barX + borderW, barY + borderW,
+            (barW - borderW * 2) * hpRatio, barH - borderW * 2);
 
-        // Shine
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-        ctx.fillRect(barX, barY, barW * hpRatio, 1);
+        // Shine on top edge
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillRect(barX + borderW, barY + borderW,
+            (barW - borderW * 2) * hpRatio, 1);
     }
 
     ctx.restore();

@@ -25,7 +25,10 @@ import { renderBosses } from './boss-renderer.js';
 // Animation constants
 // ---------------------------------------------------------------------------
 
-const HIT_FLASH_DURATION = 0.1;
+const HIT_FLASH_DURATION = 0.15;
+
+/** Duration for the scale-punch effect on hit (shrink to 85% then bounce) */
+const PUNCH_DURATION = 0.08;
 
 /** How many pixels the float animation lifts the enemy */
 const FLOAT_AMPLITUDE = 3;
@@ -126,6 +129,20 @@ function _renderEnemy(ctx, e, now) {
         ctx.scale(1 + jitter, 1 + jitter);
     }
 
+    // Scale punch: quick shrink-then-bounce on hit (0.85 → 1.0 over PUNCH_DURATION)
+    const isPunching = (lastHit != null) && ((now - lastHit) < PUNCH_DURATION);
+    if (isPunching) {
+        const punchT = (now - lastHit) / PUNCH_DURATION;
+        const punchScale = 0.85 + easeOutBack(punchT) * 0.15;
+        ctx.scale(punchScale, punchScale);
+    }
+
+    // Red outer glow on hit (fades out during flash)
+    if (isFlashing) {
+        ctx.shadowColor = 'rgba(255, 30, 30, 0.5)';
+        ctx.shadowBlur = 6 * (1 - flashProgress);
+    }
+
     // ---- Body (type-specific) ----
     switch (e.typeId) {
         case 'slime':      _drawSlime(ctx, e, r, now, isFlashing); break;
@@ -135,6 +152,10 @@ function _renderEnemy(ctx, e, now) {
         case 'fire_skull': _drawFireSkull(ctx, e, r, now, isFlashing); break;
         default:           _drawDefault(ctx, e, r, isFlashing); break;
     }
+
+    // Reset hit glow before drawing eyes/bar
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
 
     // ---- Eyes (cartoon style, skipped for ghost which has its own) ----
     if (e.typeId !== 'ghost') {
@@ -589,40 +610,56 @@ function _drawEye(ctx, cx, cy, radius, isFlashing) {
  * @param {number} r — enemy radius
  */
 function _drawHealthBar(ctx, e, r) {
+    // Delayed HP display: smoothly lerp visual HP toward actual HP
+    if (e._displayHp === undefined || e._displayHp > e.maxHp) {
+        e._displayHp = e.hp;
+    }
+    e._displayHp += (e.hp - e._displayHp) * 0.12;
+    if (Math.abs(e.hp - e._displayHp) < 0.05) {
+        e._displayHp = e.hp;
+    }
+
     const hpRatio = e.maxHp > 0
-        ? Math.max(0, Math.min(1, e.hp / e.maxHp))
+        ? Math.max(0, Math.min(1, e._displayHp / e.maxHp))
         : 0;
 
-    const barW = r * 2;
-    const barH = 3.5;
+    const barW = r * 2.2;
+    const barH = 6;
+    const borderW = 1;
     const barX = -barW / 2;
     const barY = r + 6;
 
     ctx.save();
 
-    // Background (dark red)
-    ctx.fillStyle = 'rgba(30, 5, 5, 0.7)';
+    // Background (dark)
+    ctx.fillStyle = 'rgba(15, 5, 5, 0.75)';
     ctx.fillRect(barX, barY, barW, barH);
 
-    // Border
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.lineWidth = 0.5;
+    // Dark border
+    ctx.strokeStyle = 'rgba(10, 0, 0, 0.9)';
+    ctx.lineWidth = borderW;
     ctx.strokeRect(barX, barY, barW, barH);
 
-    // Foreground with colour gradient based on HP ratio
+    // Foreground with 4-segment colour: green > 60%, yellow 30-60%, orange 15-30%, red < 15%
     if (hpRatio > 0) {
-        if (hpRatio > 0.5) {
-            ctx.fillStyle = '#44cc44';
-        } else if (hpRatio > 0.25) {
-            ctx.fillStyle = '#cccc44';
+        let fillColor;
+        if (hpRatio > 0.6) {
+            fillColor = '#44cc44';
+        } else if (hpRatio > 0.3) {
+            fillColor = '#cccc44';
+        } else if (hpRatio > 0.15) {
+            fillColor = '#ff8844';
         } else {
-            ctx.fillStyle = '#cc4444';
+            fillColor = '#ff2222';
         }
-        ctx.fillRect(barX, barY, barW * hpRatio, barH);
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(barX + borderW, barY + borderW,
+            (barW - borderW * 2) * hpRatio, barH - borderW * 2);
 
-        // Small shine on top edge of the filled portion
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-        ctx.fillRect(barX, barY, barW * hpRatio, 1);
+        // Shine on top edge of filled portion
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillRect(barX + borderW, barY + borderW,
+            (barW - borderW * 2) * hpRatio, 1);
     }
 
     ctx.restore();
@@ -688,4 +725,16 @@ export function lightenColor(hex, factor) {
  */
 export function darkenColor(hex, factor) {
     return _darkenColor(hex, factor);
+}
+
+/**
+ * Ease-out-back curve for punch/bounce animations.
+ * Overshoots past 1.0 then settles back, creating a "pop" feel.
+ * @param {number} t — Normalised time 0..1
+ * @returns {number} Eased value, may briefly exceed 1.0
+ */
+export function easeOutBack(t) {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
