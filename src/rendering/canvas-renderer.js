@@ -68,6 +68,9 @@ export class CanvasRenderer {
         /** @type {CanvasRenderingContext2D} */
         this._ctx = canvas.getContext('2d');
 
+        // Disable bilinear filtering for crisp pixel art
+        this._ctx.imageSmoothingEnabled = false;
+
         /** @type {number} Current device pixel ratio */
         this._dpr = window.devicePixelRatio || 1;
 

@@ -209,7 +209,22 @@ function _renderBoss(ctx, boss, now) {
     const renderX = boss.x + shakeX + (1 - _easeOutCubic(entranceProgress)) * (boss.dirX * -200);
     const renderY = boss.y + shakeY + (1 - _easeOutCubic(entranceProgress)) * (boss.dirY * -200);
     const entranceAlpha = _easeOutCubic(Math.min(1, entranceElapsed / 0.6));
-    const scale = 0.5 + _easeOutCubic(entranceProgress) * 0.5;
+    // Discrete entrance scale steps to avoid continuous fractional scaling
+    // (which would blur pixel art via sub-pixel interpolation every frame).
+    // Stage thresholds: 0.5x -> 0.75x -> 1.0x -> 1.25x -> 1.0x (elastic bounce)
+    let scale;
+    const t = entranceProgress;
+    if (t < 0.2) {
+        scale = 0.5;
+    } else if (t < 0.4) {
+        scale = 0.75;
+    } else if (t < 0.7) {
+        scale = 1.0;
+    } else if (t < 0.85) {
+        scale = 1.25;
+    } else {
+        scale = 1.0;
+    }
     // Entrance flash: first 0.3s the boss is pure white
     const entranceFlash = entranceElapsed < 0.3 ? (1 - entranceElapsed / 0.3) : 0;
 
