@@ -101,7 +101,7 @@ export function updateEquipmentPanel() {
             if (nameEl) nameEl.textContent = item.name || config.label;
             if (statsEl) statsEl.textContent = _formatBriefStats(item.stats);
             // Level badge — show Lv.N based on item tier
-            const lv = item.tier || 1;
+            const lv = item.level || 1;
             const lvClamped = Math.min(lv, 4);
             if (levelEl) {
                 levelEl.textContent = `Lv.${lv}`;

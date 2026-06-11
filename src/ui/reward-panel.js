@@ -183,7 +183,7 @@ function _buildCard(reward, index, prefersReducedMotion) {
     card.appendChild(typeLabel);
 
     // Unified level badge — Lv.1 white, Lv.2 blue, Lv.3 purple, Lv.4+ gold
-    const level = reward.tier || reward.level || 1;
+    const level = reward.level || 1;
     const levelClamped = Math.min(level, 4);
     const levelLabel = document.createElement('div');
     levelLabel.className = `reward-card-level reward-card-level-${levelClamped}`;
@@ -282,7 +282,7 @@ function _buildUpgradeText(reward) {
             s => s.id === reward.typeId
         );
         if (existing) {
-            const currentLv = existing.stack || 1;
+            const currentLv = existing.level || 1;
             const nextLv = currentLv + 1;
             return `升级 Lv.${currentLv}→Lv.${nextLv}`;
         }
@@ -304,8 +304,8 @@ function _buildUpgradeText(reward) {
     if (reward.type === 'weapon' || reward.type === 'armor' || reward.type === 'accessory') {
         const currentEquip = STATE.player.equipSlots?.[reward.slot] || null;
         if (currentEquip) {
-            const currentLv = currentEquip.tier || 1;
-            const nextLv = reward.tier || 1;
+            const currentLv = currentEquip.level || 1;
+            const nextLv = reward.level || 1;
             return `升级 Lv.${currentLv}→Lv.${nextLv}`;
         }
     }
