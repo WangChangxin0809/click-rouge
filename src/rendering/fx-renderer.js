@@ -40,6 +40,7 @@
 import { ObjectPool } from '../core/object-pool.js';
 import { STATE } from '../core/game-state.js';
 import { rng } from '../core/random.js';
+import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
 
 // ---------------------------------------------------------------------------
 // Particle pool
@@ -415,13 +416,15 @@ export function burstHeal(x, y) {
 
 /**
  * Poison — purple/green toxic-mist particles that drift slowly outward with
- * a slight upward bias (like rising fumes). 25-40 particles, longer life.
+ * a slight upward bias (like rising fumes). Larger, longer-lasting, and
+ * greener than the original for stronger visual presence.
+ * 30-50 particles, longer life.
  *
  * @param {number} x  @param {number} y
  */
 export function burstPoison(x, y) {
-    const count = rng.nextInt(25, 40);
-    const life  = 0.65;
+    const count = rng.nextInt(30, 50);
+    const life  = 0.85;
 
     for (let i = 0; i < count; i++) {
         const p = _pool.acquire();
@@ -429,22 +432,24 @@ export function burstPoison(x, y) {
         p.y = y;
 
         const angle = rng.nextFloat(-Math.PI, Math.PI);
-        const speed = rng.nextFloat(20, 120);
+        const speed = rng.nextFloat(10, 100);
         p.vx = Math.cos(angle) * speed;
         p.vy = Math.sin(angle) * speed - rng.nextFloat(10, 50); // slight upward bias
 
         p.maxLife = life;
         p.life    = life;
-        // Purple / acid-green palette
+        // Purple / acid-green palette — more green presence
         const shade = rng.nextFloat(0, 1);
-        if (shade < 0.4) {
+        if (shade < 0.3) {
             p.color = '#aa44ff';
-        } else if (shade < 0.75) {
+        } else if (shade < 0.55) {
             p.color = '#8844cc';
+        } else if (shade < 0.8) {
+            p.color = '#66ff33'; // acid-green accent — increased weight
         } else {
-            p.color = '#66ff33'; // acid-green accent
+            p.color = '#44dd22'; // brighter green variant
         }
-        p.size   = rng.nextFloat(2, 5.5);
+        p.size   = rng.nextFloat(3, 7);
         p.active = true;
 
         STATE.particles.push(p);
@@ -545,4 +550,127 @@ export function getScreenFlash() {
         color: _flashColor,
         alpha: _flashAlpha,
     };
+}
+
+// ---------------------------------------------------------------------------
+// Skill VFX layer — lightning strikes, berserk vignette, gold rain
+// ---------------------------------------------------------------------------
+
+/** @type {Array<{x1:number, y1:number, x2:number, y2:number, timer:number}>} */
+const _lightningStrikes = [];
+let _berserkVignetteAlpha = 0;
+
+/**
+ * Trigger a zigzag lightning bolt from (x1,y1) to (x2,y2).
+ * Rendered for ~0.2 seconds then fades.
+ *
+ * @param {number} x1 @param {number} y1 — Start position
+ * @param {number} x2 @param {number} y2 — Target position
+ */
+export function triggerLightningStrike(x1, y1, x2, y2) {
+    _lightningStrikes.push({ x1, y1, x2, y2, timer: 0.2 });
+}
+
+/**
+ * Trigger berserk red vignette around screen edges.
+ * Fades out over ~0.5 seconds.
+ */
+export function triggerBerserkVignette() {
+    _berserkVignetteAlpha = 0.4;
+}
+
+/**
+ * Gold coin rain — gold particles falling from above the target.
+ * 25 particles, long life, wide horizontal spread for a "coin shower" feel.
+ *
+ * @param {number} x @param {number} y
+ */
+export function burstGoldRain(x, y) {
+    const count = 25;
+    const life = 1.0;
+
+    for (let i = 0; i < count; i++) {
+        const p = _pool.acquire();
+        p.x = rng.nextFloat(x - 250, x + 250);
+        p.y = y - rng.nextFloat(0, 120);
+        p.vx = rng.nextFloat(-60, 60);
+        p.vy = rng.nextFloat(150, 400);
+        p.maxLife = life;
+        p.life = life;
+        p.color = '#ffd700';
+        p.size = rng.nextFloat(2, 5);
+        p.active = true;
+
+        STATE.particles.push(p);
+    }
+}
+
+/**
+ * Update skill VFX state (lightning timers, vignette fade).
+ * Must be called once per frame from the game-update path.
+ *
+ * @param {number} dt — Delta time in seconds
+ */
+export function updateSkillVFX(dt) {
+    for (let i = _lightningStrikes.length - 1; i >= 0; i--) {
+        _lightningStrikes[i].timer -= dt;
+        if (_lightningStrikes[i].timer <= 0) _lightningStrikes.splice(i, 1);
+    }
+    if (_berserkVignetteAlpha > 0) {
+        _berserkVignetteAlpha = Math.max(0, _berserkVignetteAlpha - dt * 0.8);
+    }
+}
+
+/**
+ * Render skill VFX layer (lightning bolts, berserk vignette).
+ * Called from canvas-renderer.js after entities, before screen flash.
+ *
+ * @param {CanvasRenderingContext2D} ctx — 2D context (already scaled)
+ */
+export function renderSkillVFX(ctx) {
+    // ---- Lightning strikes: zigzag bolts ----
+    if (_lightningStrikes.length > 0) {
+        ctx.save();
+        for (const ls of _lightningStrikes) {
+            const alpha = Math.min(1, ls.timer / 0.1);
+            ctx.globalAlpha = alpha;
+
+            // Outer glow — thick white bolt
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(ls.x1, ls.y1);
+            const dx = ls.x2 - ls.x1;
+            const dy = ls.y2 - ls.y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const segments = Math.max(3, Math.floor(dist / 30));
+            for (let i = 1; i < segments; i++) {
+                const t = i / segments;
+                const jitter = (Math.random() - 0.5) * 40;
+                ctx.lineTo(ls.x1 + dx * t + jitter, ls.y1 + dy * t + jitter * 0.5);
+            }
+            ctx.lineTo(ls.x2, ls.y2);
+            ctx.stroke();
+
+            // Inner glow — thin yellow core
+            ctx.strokeStyle = '#ffff88';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // ---- Berserk vignette: red radial glow from screen edges ----
+    if (_berserkVignetteAlpha > 0) {
+        ctx.save();
+        const grad = ctx.createRadialGradient(
+            DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2, DESIGN_WIDTH * 0.35,
+            DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2, DESIGN_WIDTH * 0.75,
+        );
+        grad.addColorStop(0, 'transparent');
+        grad.addColorStop(1, `rgba(255, 40, 20, ${_berserkVignetteAlpha})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+        ctx.restore();
+    }
 }

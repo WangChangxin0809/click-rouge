@@ -15,7 +15,7 @@ import { initSpawnSystem, updateSpawnSystem } from './systems/spawn-system.js';
 import { updateDifficulty } from './systems/difficulty-system.js';
 import { updateCombatSystem } from './systems/combat-system.js';
 import { initEconomySystem, updateEconomySystem } from './systems/economy-system.js';
-import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstFreeze, burstHeal, burstPoison, triggerScreenFlash, updateScreenFlash } from './rendering/fx-renderer.js';
+import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstFreeze, burstHeal, burstPoison, triggerScreenFlash, updateScreenFlash, triggerLightningStrike, triggerBerserkVignette, burstGoldRain, updateSkillVFX } from './rendering/fx-renderer.js';
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
 import { startMenuBGM, startBattleBGM, stopBGM, resumeBGM } from './audio/bgm.js';
@@ -125,6 +125,7 @@ function update(dt) {
     updateParticles(dt);
     updateShake(dt);
     updateScreenFlash(dt);
+    updateSkillVFX(dt);
     updateNotificationLog(dt);
 }
 
@@ -440,11 +441,17 @@ events.on('enemy:spawned', (e) => { if (e.isBoss) addNotification(`${(ENEMY_TYPE
 events.on('boss:died', (boss) => addNotification(`${(BOSS_TYPES[boss.typeId]?.name) || boss.typeId || 'Boss'} 被击败！`, 'reward'));
 events.on('skill:activated', (p) => addNotification(`${p.name}！`, 'skill'));
 
-// Skill VFX — thunder strike: lightning burst + yellow flash
+// Skill VFX — thunder strike: lightning burst + bolts to all enemies + yellow flash
 events.on('skill:thunder', (_payload) => {
-    // Burst from the centre of the design-resolution screen
     burstThunder(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
-    triggerScreenFlash('#ffff00', 0.25, 0.15);
+    triggerScreenFlash('#ffff00', 0.3, 0.2);
+    // Lightning bolts from screen center to every living enemy
+    const enemies = STATE.enemies || [];
+    for (const e of enemies) {
+        if (e.hp > 0) {
+            triggerLightningStrike(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2, e.x, e.y);
+        }
+    }
 });
 
 // Freeze — blue screen flash + ice burst from center
@@ -459,15 +466,17 @@ events.on('skill:poison_blade', (_payload) => {
     triggerScreenFlash('#8844cc', 0.15, 0.15);
 });
 
-// Berserk — red screen flash (anger/rage effect)
+// Berserk — red screen flash + vignette + shake (rage effect)
 events.on('skill:berserk', (_payload) => {
-    triggerScreenFlash('#ff4422', 0.25, 0.2);
-    triggerShake(4, 0.08);
+    triggerScreenFlash('#ff4422', 0.3, 0.25);
+    triggerShake(6, 0.1);
+    triggerBerserkVignette();
 });
 
-// Gold rush — gold sparkle flash
+// Gold rush — gold sparkle flash + coin rain from top of screen
 events.on('skill:gold_rush', (_payload) => {
     triggerScreenFlash('#ffd700', 0.2, 0.15);
+    burstGoldRain(DESIGN_WIDTH / 2, 100);
 });
 
 // Boss spawn — screen flash red + big shake for dramatic entrance

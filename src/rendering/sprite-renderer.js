@@ -276,6 +276,38 @@ function _renderSpriteEnemy(ctx, e, now) {
         );
     }
 
+    // ---- Ice overlay for frozen enemies ----
+    if (e.frozenTimer && e.frozenTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        // Blue-tinted overlay on entire enemy body
+        ctx.fillStyle = '#6699cc';
+        ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
+        // Ice crystal shards — small white triangles on edges
+        ctx.fillStyle = '#ccddff';
+        ctx.globalAlpha = 0.6;
+        const iceSize = drawW * 0.15;
+        // Top icicle
+        ctx.beginPath();
+        ctx.moveTo(0, -drawH / 2);
+        ctx.lineTo(-iceSize, -drawH / 2 + iceSize);
+        ctx.lineTo(iceSize, -drawH / 2 + iceSize);
+        ctx.fill();
+        // Left icicle
+        ctx.beginPath();
+        ctx.moveTo(-drawW / 2, 0);
+        ctx.lineTo(-drawW / 2 + iceSize, -iceSize);
+        ctx.lineTo(-drawW / 2 + iceSize, iceSize);
+        ctx.fill();
+        // Right icicle
+        ctx.beginPath();
+        ctx.moveTo(drawW / 2, 0);
+        ctx.lineTo(drawW / 2 - iceSize, -iceSize);
+        ctx.lineTo(drawW / 2 - iceSize, iceSize);
+        ctx.fill();
+        ctx.restore();
+    }
+
     // Reset glow
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
@@ -352,6 +384,35 @@ function _renderFallbackProcedural(ctx, e, now) {
         ctx.beginPath();
         ctx.arc(r * 0.35, -r * 0.15, eyeR * 0.5, 0, Math.PI * 2);
         ctx.fill();
+    }
+
+    // ---- Ice overlay for frozen enemies (procedural fallback) ----
+    if (e.frozenTimer && e.frozenTimer > 0) {
+        const iceW = r * 2.2;
+        const iceH = r * 2.2;
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = '#6699cc';
+        ctx.fillRect(-iceW / 2, -iceH / 2, iceW, iceH);
+        ctx.fillStyle = '#ccddff';
+        ctx.globalAlpha = 0.6;
+        const iceSize = iceW * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(0, -iceH / 2);
+        ctx.lineTo(-iceSize, -iceH / 2 + iceSize);
+        ctx.lineTo(iceSize, -iceH / 2 + iceSize);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-iceW / 2, 0);
+        ctx.lineTo(-iceW / 2 + iceSize, -iceSize);
+        ctx.lineTo(-iceW / 2 + iceSize, iceSize);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(iceW / 2, 0);
+        ctx.lineTo(iceW / 2 - iceSize, -iceSize);
+        ctx.lineTo(iceW / 2 - iceSize, iceSize);
+        ctx.fill();
+        ctx.restore();
     }
 
     ctx.restore();

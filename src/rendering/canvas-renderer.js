@@ -28,7 +28,7 @@
  */
 
 import { renderEnemies } from './sprite-renderer.js';
-import { renderParticles, getScreenFlash } from './fx-renderer.js';
+import { renderParticles, getScreenFlash, renderSkillVFX } from './fx-renderer.js';
 import { renderFollowers } from './follower-renderer.js';
 import { renderProjectiles } from '../entities/projectile.js';
 import { renderBossHpBar } from './boss-renderer.js';
@@ -328,6 +328,9 @@ export class CanvasRenderer {
         renderProjectiles(ctx);
 
         ctx.restore(); // shake
+
+        // --- Skill VFX layer (lightning bolts, berserk vignette) ---
+        renderSkillVFX(ctx);
 
         // --- Boss HP bar (after entities, before screen flash) ---
         renderBossHpBar(ctx, state.enemies, state.elapsedTime);
