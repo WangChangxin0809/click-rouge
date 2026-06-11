@@ -39,6 +39,7 @@ import { LEVELS } from './data/level-config.js';
 import { SKILLS } from './data/skill-data.js';
 import { scaleStats } from './data/level-scaling.js';
 import { createFollower } from './entities/follower.js';
+import { FOLLOWERS } from './data/follower-data.js';
 import { EQUIPMENT } from './data/equipment-data.js';
 import { recalculateStats } from './systems/progression-system.js';
 
@@ -306,7 +307,7 @@ function startGame(config = {}) {
     if (config.followers && config.followers.length > 0) {
         STATE.player.activeFollowers = [];
         for (const typeId of config.followers) {
-            const f = createFollower(typeId, {}, STATE.player.activeFollowers.length, config.followers.length);
+            const f = createFollower(typeId, FOLLOWERS, STATE.player.activeFollowers.length, config.followers.length);
             if (f) STATE.player.activeFollowers.push(f);
         }
     }
