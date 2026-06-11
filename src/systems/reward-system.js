@@ -151,7 +151,7 @@ export function applyReward(reward) {
                         id: reward.id,
                         name: reward.name,
                         description: reward.description,
-                        type: reward.type,
+                        type: reward.followerType,
                         stats: { ...reward.stats },
                         level: 1,
                     });

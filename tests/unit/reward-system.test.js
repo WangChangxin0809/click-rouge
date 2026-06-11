@@ -120,7 +120,6 @@ try {
         // If this fails occasionally due to randomness, that's expected.
         if (!foundEquipment) {
             console.log('  SKIP: no equipment reward generated in 5 attempts (random chance)');
-            passed++; // Count as pass to avoid false failures
         }
     }
 
