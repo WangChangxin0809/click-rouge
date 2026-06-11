@@ -150,7 +150,7 @@ function showScreen(name) {
     if (name === 'main-menu') showMainMenu();
     if (name === 'level-select') showLevelSelect();
     if (name === 'shop-panel') showShopPanel();
-    if (name === 'loadout-panel') showLoadoutPanel();
+    if (name === 'loadout-panel') showLoadoutPanel(STATE._selectedLevelId);
     if (name === 'settlement-panel') { /* Settlement shown via showSettlement() directly */ }
 }
 
@@ -490,6 +490,17 @@ events.on('level:selected', (payload) => {
     showScreen('loadout-panel');
 });
 
+// Loadout confirmed — start game with selected loadout config
+events.on('loadout:confirmed', (config) => {
+    const { levelId, skills, followers, equipment } = config;
+    startGame({ levelId, skills, followers, equipment });
+});
+
+// Settlement replay — restart game with same config
+events.on('settlement:replay', (config) => {
+    startGame(config);
+});
+
 // ---------------------------------------------------------------------------
 // Reward system wiring — real boss defeated → reward selection
 // ---------------------------------------------------------------------------
@@ -544,6 +555,8 @@ loadMeta();
 // Initialise navigation UI
 initMainMenu();
 initLevelSelect();
+initShopPanel();
+initSettlementPanel();
 
 // Hide the old start screen (preserved for backwards compat during transition)
 startScreen.classList.add('hidden');
