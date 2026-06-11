@@ -30,7 +30,7 @@
  *   updateSpawnSystem(dt);
  */
 
-import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../core/constants.js';
+import { DESIGN_WIDTH, DESIGN_HEIGHT, BASE_DAMAGE_RADIUS } from '../core/constants.js';
 import { STATE } from '../core/game-state.js';
 import { events } from '../core/event-bus.js';
 import { rng } from '../core/random.js';
@@ -39,7 +39,6 @@ import { BOSS_TIERS } from '../data/boss-definitions.js';
 import { createEnemy, updateEnemy } from '../entities/enemy.js';
 import { createBoss, updateBoss } from '../entities/boss.js';
 import { getDifficulty } from './difficulty-system.js';
-import { BASE_DAMAGE_RADIUS } from '../rendering/base-renderer.js';
 
 // ---------------------------------------------------------------------------
 // Tuning constants — all numeric values exposed for designer adjustment

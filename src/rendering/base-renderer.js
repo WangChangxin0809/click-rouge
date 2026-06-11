@@ -48,9 +48,6 @@ const GLOW_EXTRA = 18;
 /** Pulse period in seconds (full breath cycle) */
 const PULSE_PERIOD = 2.5;
 
-/** Collision / threat radius — enemies within this distance damage the base */
-export const BASE_DAMAGE_RADIUS = 80;
-
 // ---------------------------------------------------------------------------
 // Internal drawing helpers
 // ---------------------------------------------------------------------------
