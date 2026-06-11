@@ -102,6 +102,10 @@ function _injectStyles() {
             .main-menu-title { font-size: 36px; }
             .main-menu-btn { width: 220px; font-size: 16px; padding: 12px 0; }
         }
+        @keyframes coinPulse {
+            0%, 100% { text-shadow: 0 0 4px rgba(255, 215, 0, 0.3); }
+            50%      { text-shadow: 0 0 12px rgba(255, 215, 0, 0.7); }
+        }
     `;
     document.head.appendChild(style);
 }
