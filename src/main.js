@@ -32,7 +32,13 @@ import { BOSS_TYPES } from './data/boss-definitions.js';
 import { initMainMenu, showMainMenu } from './ui/main-menu.js';
 import { initLevelSelect, showLevelSelect } from './ui/level-select.js';
 import { initShopPanel, showShopPanel } from './ui/shop-panel.js';
-import { loadMeta } from './systems/meta-progression.js';
+import { initLoadoutPanel, showLoadoutPanel } from './ui/loadout-panel.js';
+import { initSettlementPanel, showSettlement, cacheRunConfig } from './ui/settlement-panel.js';
+import { loadMeta, recordRunComplete, getItemLevel } from './systems/meta-progression.js';
+import { LEVELS } from './data/level-config.js';
+import { SKILLS } from './data/skill-data.js';
+import { scaleStats } from './data/level-scaling.js';
+import { createFollower } from './entities/follower.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -256,243 +262,48 @@ window.addEventListener('keydown', handleKeyDown);
 /**
  * Start (or restart) a new game run.
  */
-function startGame() {
-    // Clean up any lingering reward panel from a previous run
-    hideRewardPanel();
+let _lastStartConfig = null;
 
+function startGame(config = {}) {
+    hideRewardPanel();
+    _lastStartConfig = config;
+    cacheRunConfig(config);
     STATE.reset();
     STATE.gameStatus = 'playing';
     STATE.clickQueue = [];
-
+    STATE._bossKills = 0;
+    if (config.levelId) {
+        STATE._selectedLevelId = config.levelId;
+        STATE.levelConfig = LEVELS[config.levelId] || null;
+    }
     initSpawnSystem();
     initEconomySystem();
     initSkillSystem();
     clearProjectiles();
     initAudio();
-
-    // Swap screens
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     startScreen.classList.add('hidden');
     gameoverScreen.classList.add('hidden');
-
-    // Start the game loop
     gameLoop.start();
-
     events.emit('game:started', null);
 }
 
-/**
- * End the current game run and show the game-over screen.
- */
 function endGame() {
     gameLoop.stop();
     STATE.gameStatus = 'gameOver';
-
-    // Populate game-over stats
-    const totalSec = Math.floor(STATE.elapsedTime);
-    const min = Math.floor(totalSec / 60);
-    const sec = totalSec % 60;
-    statTime.textContent = `${min}:${String(sec).padStart(2, '0')}`;
-    statWave.textContent = String(STATE.maxWaveReached);
-    statKills.textContent = String(STATE.killCount);
-    statGold.textContent = String(STATE.player.gold);
-
-    // Show game-over card
+    const stats = {
+        gold: STATE.player.gold, wave: STATE.maxWaveReached,
+        kills: STATE.killCount, bossKills: STATE._bossKills || 0,
+        elapsedTime: STATE.elapsedTime, levelId: STATE._selectedLevelId || 1,
+    };
+    recordRunComplete(stats);
+    showSettlement(stats, _lastStartConfig || {});
     startScreen.classList.add('hidden');
-    gameoverScreen.classList.remove('hidden');
-
-    events.emit('game:ended', {
-        elapsedTime: STATE.elapsedTime,
-        wave: STATE.maxWaveReached,
-        kills: STATE.killCount,
-        gold: STATE.player.gold,
-    });
-    console.log('[ClickRouge] Game over.');
+    gameoverScreen.classList.add('hidden');
 }
 
-// ---------------------------------------------------------------------------
-// Button bindings
-// ---------------------------------------------------------------------------
+// Meta event listeners
+events.on('loadout:confirmed', (config) => startGame(config));
+events.on('settlement:replay', (config) => startGame(config));
 
-btnStart.addEventListener('click', startGame);
-btnRestart.addEventListener('click', startGame);
 
-// ---------------------------------------------------------------------------
-// EventBus listeners (game-level)
-// ---------------------------------------------------------------------------
-
-// Combat → particles + audio + screen shake + damage numbers
-events.on('enemy:hit', (payload) => {
-    burstHit(payload.position.x, payload.position.y);
-    showDamageNumber(payload.position.x, payload.position.y, payload.damage, payload.isCrit);
-    if (payload.isCrit) {
-        burstCrit(payload.position.x, payload.position.y);
-        playCrit();
-        triggerShake(4, 0.1);
-    } else {
-        playHit();
-        triggerShake(2, 0.05);
-    }
-});
-
-events.on('enemy:died', (payload) => {
-    burstDeath(payload.enemy.x, payload.enemy.y, payload.enemy.color);
-    showGoldNumber(payload.enemy.x, payload.enemy.y, payload.enemy.gold);
-    playDeath();
-    triggerShake(8, 0.2);
-});
-
-// Click miss feedback — when player clicks on empty space
-events.on('click:miss', (payload) => {
-    showMissText(payload.x, payload.y);
-});
-
-// Player damage feedback — screen shake on hit
-events.on('player:damaged', (_payload) => {
-    triggerShake(6, 0.15);
-});
-
-// Notification log events
-events.on('game:started', () => addNotification('游戏开始', 'system'));
-events.on('wave:start', (p) => addNotification(`第 ${p.wave} 波`, 'system'));
-events.on('enemy:spawned', (e) => { if (e.isBoss) addNotification(`${(ENEMY_TYPES[e.typeId]?.name) || e.typeId || '敌人'} 出现了！`, 'boss'); });
-events.on('boss:died', (boss) => addNotification(`${(BOSS_TYPES[boss.typeId]?.name) || boss.typeId || 'Boss'} 被击败！`, 'reward'));
-events.on('skill:activated', (p) => addNotification(`${p.name}！`, 'skill'));
-
-// Skill VFX — thunder strike: lightning burst + yellow flash
-events.on('skill:thunder', (_payload) => {
-    // Burst from the centre of the design-resolution screen
-    burstThunder(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
-    triggerScreenFlash('#ffff00', 0.25, 0.15);
-});
-
-// Boss spawn — screen flash red + big shake for dramatic entrance
-events.on('boss:spawned', (_payload) => {
-    triggerScreenFlash('#ff2222', 0.35, 0.25);
-    triggerShake(12, 0.3);
-});
-
-// Player healed — green rising particles (no screen flash for subtle feedback)
-events.on('player:healed', (_payload) => {
-    burstHeal(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
-});
-
-// Skill activation from keyboard hotkeys
-events.on('skill:activate', (payload) => {
-    activateSkill(payload.slot);
-});
-
-// Listen for game-over trigger from gameplay systems
-events.on('game:triggerGameOver', () => {
-    endGame();
-});
-
-// ---------------------------------------------------------------------------
-// Meta / Navigation event listeners
-// ---------------------------------------------------------------------------
-
-// Screen navigation (main menu -> level select -> etc.)
-events.on('menu:navigate', (payload) => {
-    if (!payload || !payload.screen) return;
-    const screenMap = {
-        lobby: 'main-menu',
-        levelSelect: 'level-select',
-        shop: 'shop-panel',
-        loadout: 'loadout-panel',
-        settlement: 'settlement-panel',
-    };
-    const screenId = screenMap[payload.screen] || payload.screen;
-    showScreen(screenId);
-});
-
-// Level selected — store levelId and navigate to loadout (placeholder)
-events.on('level:selected', (payload) => {
-    if (!payload || payload.levelId == null) return;
-    console.log('[ClickRouge] Level selected:', payload.levelId);
-    // Store selected level for later use by game start
-    STATE._selectedLevelId = payload.levelId;
-    // For now, navigate to loadout placeholder
-    showScreen('loadout-panel');
-});
-
-// ---------------------------------------------------------------------------
-// Reward system wiring — real boss defeated → reward selection
-// ---------------------------------------------------------------------------
-
-/**
- * Boss defeated → pause gameplay and show reward selection panel.
- * Triggered by boss:died event from spawn-system (real boss death).
- */
-events.on('boss:died', (payload) => {
-    // Guard: only trigger reward picking during active gameplay
-    if (STATE.gameStatus !== 'playing') return;
-
-    STATE.gameStatus = 'rewardPicking';
-
-    const rewards = generateRewards(payload.tier);
-    showRewardPanel(rewards, (reward) => {
-        applyReward(reward);
-
-        // Refresh skill bar if a skill reward was picked
-        if (STATE.player.activeSkills && STATE.player.activeSkills.length > 0) {
-            setSkillSlots(STATE.player.activeSkills);
-        }
-
-        STATE.gameStatus = 'playing';
-    });
-});
-
-// Kill-based mini reward — 2-choose-1 upgrade during combat
-events.on('reward:trigger', (payload) => {
-    if (STATE.gameStatus !== 'playing') return;
-    STATE.gameStatus = 'rewardPicking';
-    const rewards = generateMiniRewards(payload.tier);
-    showRewardPanel(rewards, (reward) => {
-        applyReward(reward);
-
-        // Refresh skill bar if a skill reward was picked
-        if (STATE.player.activeSkills && STATE.player.activeSkills.length > 0) {
-            setSkillSlots(STATE.player.activeSkills);
-        }
-
-        STATE.gameStatus = 'playing';
-    });
-});
-
-// ---------------------------------------------------------------------------
-// Initial state — Meta Phase B: main menu + level select
-// ---------------------------------------------------------------------------
-
-// Load meta-progression data (must run before UI init so stats are available)
-loadMeta();
-
-// Initialise navigation UI
-initMainMenu();
-initLevelSelect();
-initShopPanel();
-
-// Hide the old start screen (preserved for backwards compat during transition)
-startScreen.classList.add('hidden');
-gameoverScreen.classList.add('hidden');
-
-// Show the main menu as the first screen
-showScreen('main-menu');
-
-// Render initial idle frame (canvas stays in background)
-renderer.clear();
-renderer.render(STATE);
-
-// Preload sprites in background while main menu is showing
-(async () => {
-    try {
-        const resp = await fetch('assets/sprites/manifest.json');
-        if (resp.ok) {
-            const manifest = await resp.json();
-            await preloadSprites(manifest);
-            console.log('[ClickRouge] Sprites preloaded');
-        }
-    } catch (e) {
-        console.warn('[ClickRouge] Sprite preload failed, using procedural fallback:', e.message);
-    }
-})();
-
-console.log('[ClickRouge] Bootstrap complete. Main menu shown.');
