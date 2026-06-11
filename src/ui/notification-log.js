@@ -83,6 +83,11 @@ function _getContainer() {
  * @param {'combat'|'skill'|'boss'|'reward'|'system'} type - Category for colour styling
  */
 export function addNotification(text, type = 'combat') {
+    // Debug: log suspicious notifications for bug hunting
+    if (!text || text.includes('undefined') || text.includes('null')) {
+        console.warn('[Notification] SUSPICIOUS:', JSON.stringify({ text, type }));
+        console.trace('[Notification] Stack trace:');
+    }
     const container = _getContainer();
     const config = TYPE_CONFIG[type] || TYPE_CONFIG.combat;
 

@@ -152,7 +152,7 @@ export function activateSkill(slotIndex) {
     skill._cooldownRemaining = def.cooldown;
     skill._cooldownTotal = def.cooldown;
 
-    events.emit('skill:activated', { slot: slotIndex, typeId: skill.typeId, name: def.name });
+    events.emit('skill:activated', { slot: slotIndex, typeId: skill.typeId, name: def.label });
 }
 
 // ---------------------------------------------------------------------------
