@@ -49,7 +49,7 @@ const SPRITE_DEFS = {
     golem:         { key: 'golem',         frameW: 32,  frameH: 32,  frames: 1, fps: 1 },
     fire_skull:    { key: 'fire_skull',    frameW: 128, frameH: 128, frames: 1, fps: 1 },
     // Boss sprites
-    giant_slime:   { key: 'giant_slime',   frameW: 74,  frameH: 86,  frames: 4, fps: 4, layout: 'horizontal', scale: 2.5 },
+    giant_slime:   { key: 'giant_slime',   frameW: 74,  frameH: 86,  frames: 4, fps: 4, layout: 'horizontal', scale: 3 },
     skeleton_king: { key: 'skeleton_king', frameW: 138, frameH: 138, frames: 4, fps: 4, layout: 'horizontal' },
     fire_dragon:   { key: 'fire_dragon',   frameW: 428, frameH: 377, frames: 1, fps: 1 },
 };
@@ -195,8 +195,17 @@ function _renderSpriteEnemy(ctx, e, now) {
     const manifestScale = spriteDef.scale || 1;
     const targetH = r * 2 * manifestScale;
     const spriteScale = targetH / spriteDef.frameH;
-    const drawW = spriteDef.frameW * spriteScale * entranceScale;
-    const drawH = targetH * entranceScale;
+    let drawW = spriteDef.frameW * spriteScale * entranceScale;
+    let drawH = targetH * entranceScale;
+
+    // Procedural animation for single-frame sprites (breathing + vertical float)
+    let animOffsetY = 0;
+    if (spriteDef.frames === 1) {
+        const breathe = Math.sin(now * 2.5) * 0.05;
+        drawW *= (1 + breathe);
+        drawH *= (1 + breathe);
+        animOffsetY = Math.sin(now * 1.8) * 2;
+    }
 
     // Get current animation frame
     const animator = _getAnimator(spriteKey);
@@ -213,7 +222,7 @@ function _renderSpriteEnemy(ctx, e, now) {
 
     // Translate to enemy center (enables centered scale-punch and glow)
     // Boss entrance animation uses adjusted renderX/renderY
-    ctx.translate(renderX, renderY + floatY);
+    ctx.translate(renderX, renderY + floatY + animOffsetY);
 
     // Boss entrance alpha (1.0 for regular enemies)
     if (entranceAlpha < 1) {
