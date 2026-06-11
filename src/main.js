@@ -27,6 +27,8 @@ import { initSkillSystem, updateSkillSystem, activateSkill, updateAutoCast } fro
 import { updateAllFollowers } from './entities/follower.js';
 import { updateProjectiles, clearProjectiles } from './entities/projectile.js';
 import { addNotification, updateNotificationLog } from './ui/notification-log.js';
+import { ENEMY_TYPES } from './data/enemy-definitions.js';
+import { BOSS_TYPES } from './data/boss-definitions.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -319,8 +321,8 @@ events.on('player:damaged', (_payload) => {
 // Notification log events
 events.on('game:started', () => addNotification('游戏开始', 'system'));
 events.on('wave:start', (p) => addNotification(`第 ${p.wave} 波`, 'system'));
-events.on('enemy:spawned', (e) => { if (e.isBoss) addNotification(`${e.name || 'Boss'} 出现了！`, 'boss'); });
-events.on('boss:died', (boss) => addNotification(`${boss.name || 'Boss'} 被击败！`, 'reward'));
+events.on('enemy:spawned', (e) => { if (e.isBoss) addNotification(`${(ENEMY_TYPES[e.typeId]?.name) || e.typeId || '敌人'} 出现了！`, 'boss'); });
+events.on('boss:died', (boss) => addNotification(`${(BOSS_TYPES[boss.typeId]?.name) || boss.typeId || 'Boss'} 被击败！`, 'reward'));
 events.on('skill:activated', (p) => addNotification(`${p.name}！`, 'skill'));
 
 // Skill VFX — thunder strike: lightning burst + yellow flash

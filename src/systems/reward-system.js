@@ -56,24 +56,30 @@ export function generateMiniRewards(tier) {
     const timestamp = Date.now();
 
     for (let i = 0; i < count; i++) {
-        const type = _pickRewardType();
-        let reward;
-
-        switch (type) {
-            case 'equipment':
-                reward = _generateEquipment(tier, timestamp, i);
-                break;
-            case 'skill':
-                reward = _generateSkill(tier, timestamp, i);
-                break;
-            case 'follower':
-                reward = _generateFollower(tier, timestamp, i);
-                break;
-            case 'buff':
-                reward = _generateBuff(timestamp, i);
-                break;
-            default:
-                reward = _generateEquipment(tier, timestamp, i);
+        let reward = null;
+        // Retry up to 5 times with different types if generator returns null
+        for (let attempt = 0; attempt < 5 && !reward; attempt++) {
+            const type = _pickRewardType();
+            switch (type) {
+                case 'equipment':
+                    reward = _generateEquipment(tier, timestamp, i);
+                    break;
+                case 'skill':
+                    reward = _generateSkill(tier, timestamp, i);
+                    break;
+                case 'follower':
+                    reward = _generateFollower(tier, timestamp, i);
+                    break;
+                case 'buff':
+                    reward = _generateBuff(timestamp, i);
+                    break;
+                default:
+                    reward = _generateEquipment(tier, timestamp, i);
+            }
+        }
+        // Fallback: equipment is always available
+        if (!reward) {
+            reward = _generateEquipment(tier, timestamp, i);
         }
 
         rewards.push(reward);
@@ -94,25 +100,30 @@ export function generateRewards(bossTier) {
     const timestamp = Date.now();
 
     for (let i = 0; i < count; i++) {
-        const type = _pickRewardType();
-        let reward;
-
-        switch (type) {
-            case 'equipment':
-                reward = _generateEquipment(bossTier, timestamp, i);
-                break;
-            case 'skill':
-                reward = _generateSkill(bossTier, timestamp, i);
-                break;
-            case 'follower':
-                reward = _generateFollower(bossTier, timestamp, i);
-                break;
-            case 'buff':
-                reward = _generateBuff(timestamp, i);
-                break;
-            default:
-                // Fallback
-                reward = _generateEquipment(bossTier, timestamp, i);
+        let reward = null;
+        // Retry up to 5 times with different types if generator returns null
+        for (let attempt = 0; attempt < 5 && !reward; attempt++) {
+            const type = _pickRewardType();
+            switch (type) {
+                case 'equipment':
+                    reward = _generateEquipment(bossTier, timestamp, i);
+                    break;
+                case 'skill':
+                    reward = _generateSkill(bossTier, timestamp, i);
+                    break;
+                case 'follower':
+                    reward = _generateFollower(bossTier, timestamp, i);
+                    break;
+                case 'buff':
+                    reward = _generateBuff(timestamp, i);
+                    break;
+                default:
+                    reward = _generateEquipment(bossTier, timestamp, i);
+            }
+        }
+        // Fallback: equipment is always available
+        if (!reward) {
+            reward = _generateEquipment(bossTier, timestamp, i);
         }
 
         rewards.push(reward);
@@ -345,12 +356,21 @@ function _generateEquipment(bossTier, timestamp, index) {
  * @returns {Object}
  */
 function _generateSkill(bossTier, timestamp, index) {
-    const ownedIds = (STATE.player.activeSkills || []).map(s => s.id);
+    const activeSkills = STATE.player.activeSkills || [];
+    const ownedIds = activeSkills.map(s => s.id);
 
     // Skills unavailable until certain tiers
     const tierUnlock = bossTier >= 2
         ? SKILLS
         : SKILLS.filter(s => ['thunder_strike', 'heal', 'poison_blade'].includes(s.id));
+
+    // If skill slots are full and all tier-available skills are already owned, skip
+    if (activeSkills.length >= BALANCE.MAX_SKILL_SLOTS) {
+        const hasNewSkill = tierUnlock.some(s => !ownedIds.includes(s.id));
+        if (!hasNewSkill) {
+            return null;
+        }
+    }
 
     // Prefer unowned skills
     const unowned = tierUnlock.filter(s => !ownedIds.includes(s.id));
@@ -387,7 +407,8 @@ function _generateSkill(bossTier, timestamp, index) {
  * @returns {Object}
  */
 function _generateFollower(bossTier, timestamp, index) {
-    const ownedIds = (STATE.player.activeFollowers || []).map(f => f.id);
+    const activeFollowers = STATE.player.activeFollowers || [];
+    const ownedIds = activeFollowers.map(f => f.id);
 
     // T2+ unlocks combat followers, T3+ unlocks support
     let available = FOLLOWERS;
@@ -396,6 +417,14 @@ function _generateFollower(bossTier, timestamp, index) {
     }
     if (bossTier < 3) {
         available = available.filter(f => f.type === 'combat');
+    }
+
+    // If follower slots are full and all tier-available followers are already owned, skip
+    if (activeFollowers.length >= BALANCE.MAX_FOLLOWERS) {
+        const hasNewFollower = available.some(f => !ownedIds.includes(f.id));
+        if (!hasNewFollower) {
+            return null;
+        }
     }
 
     // Prefer unowned
