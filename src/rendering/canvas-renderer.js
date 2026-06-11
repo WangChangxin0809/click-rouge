@@ -31,6 +31,8 @@ import { renderEnemies } from './enemy-renderer.js';
 import { renderParticles, getScreenFlash } from './fx-renderer.js';
 import { renderFollowers } from './follower-renderer.js';
 import { renderProjectiles } from '../entities/projectile.js';
+import { renderBossHpBar } from './boss-renderer.js';
+import { renderBackground } from './background-renderer.js';
 import { getShakeOffset } from './screen-shake.js';
 
 // ---------------------------------------------------------------------------
@@ -302,15 +304,8 @@ export class CanvasRenderer {
         ctx.save();
         ctx.scale(scaleX, scaleY);
 
-        // --- Background gradient ---
-        // Draw a dark gradient from top (deep charcoal) to bottom (near-black)
-        // so that screen-flash overlays have a solid base to tint.
-        const bgGrad = ctx.createLinearGradient(0, 0, 0, DESIGN_HEIGHT);
-        bgGrad.addColorStop(0, '#1a1a2e');
-        bgGrad.addColorStop(0.5, '#16213e');
-        bgGrad.addColorStop(1, '#0f0f1a');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+        // --- Dynamic background (stars, grid, gradient) ---
+        renderBackground(ctx, state.elapsedTime);
 
         // Apply screen shake
         const shake = getShakeOffset();
@@ -326,6 +321,9 @@ export class CanvasRenderer {
         renderProjectiles(ctx);
 
         ctx.restore(); // shake
+
+        // --- Boss HP bar (after entities, before screen flash) ---
+        renderBossHpBar(ctx, state.enemies, state.elapsedTime);
 
         // --- Screen flash overlay ---
         // Drawn after all entities so it tints the entire scene.
