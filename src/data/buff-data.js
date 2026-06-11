@@ -1,65 +1,75 @@
 /**
- * Buff Data — Passive buff definitions.
+ * Buff Data — Registry of passive buff types.
  *
- * All buffs are stackable (player can acquire the same buff multiple times).
- * Each buff provides permanent stat bonuses. Buffs are stored in
- * STATE.player.passiveBuffs and contribute to recalculateStats().
+ * Each buff type has:
+ *   - name / description: display text
+ *   - base:   stat values at level 1
+ *   - perLevel: additional stats per level beyond 1
+ *
+ * Buffs are upgraded in-place: picking the same buff again increments its
+ * level and recalculates its effective stats via scaleStats(). Previously,
+ * buffs were always stackable (multiple entries per type); the level system
+ * replaces stacking with level progression.
+ *
+ * Design Doc: Unified Level System — Buff Data
  *
  * Usage:
  *   import { BUFFS } from '../data/buff-data.js';
+ *   const def = BUFFS['atk_boost'];
  */
 
 /**
  * @typedef {Object} BuffDef
- * @property {string} id - Unique identifier
  * @property {string} name - Display name
  * @property {string} description - Tooltip text
- * @property {Object} stats - Stat bonuses applied per stack
- * @property {boolean} stackable - Always true for buffs
+ * @property {Object<string, number>} base - Stats at level 1
+ * @property {Object<string, number>} perLevel - Stat increment per level
  */
 
-/** @type {BuffDef[]} */
-export const BUFFS = [
-    {
-        id: 'atk_boost',
-        name: '力量强化',
-        description: '攻击力 +15%',
-        stats: { atkPercent: 0.15 },
-        stackable: true,
-    },
-    {
-        id: 'crit_boost',
-        name: '暴击专注',
-        description: '暴击率 +8%',
-        stats: { critChance: 0.08 },
-        stackable: true,
-    },
-    {
-        id: 'hp_boost',
-        name: '生命之泉',
-        description: '最大生命 +20%',
-        stats: { maxHpPercent: 0.20 },
-        stackable: true,
-    },
-    {
-        id: 'gold_boost',
-        name: '淘金术',
-        description: '金币获取 +25%',
-        stats: { goldMultiplier: 0.25 },
-        stackable: true,
-    },
-    {
-        id: 'lifesteal',
-        name: '吸血之触',
-        description: '获得 5% 吸血',
-        stats: { lifesteal: 0.05 },
-        stackable: true,
-    },
-    {
-        id: 'thorns',
-        name: '荆棘护甲',
-        description: '反伤 +5',
-        stats: { thorns: 5 },
-        stackable: true,
-    },
-];
+/** @type {Object<string, BuffDef>} */
+export const BUFFS = {
+  atk_boost: {
+    name: '力量强化',
+    description: '攻击力提升',
+    base: { atkPercent: 0.10 },
+    perLevel: { atkPercent: 0.05 },
+  },
+
+  crit_boost: {
+    name: '暴击专注',
+    description: '暴击率提升',
+    base: { critChance: 0.05 },
+    perLevel: { critChance: 0.03 },
+  },
+
+  hp_boost: {
+    name: '生命之泉',
+    description: '最大生命提升',
+    base: { maxHpPercent: 0.10 },
+    perLevel: { maxHpPercent: 0.05 },
+  },
+
+  gold_boost: {
+    name: '淘金术',
+    description: '金币获取提升',
+    base: { goldMultiplier: 0.15 },
+    perLevel: { goldMultiplier: 0.10 },
+  },
+
+  lifesteal: {
+    name: '吸血之触',
+    description: '获得吸血',
+    base: { lifesteal: 0.03 },
+    perLevel: { lifesteal: 0.02 },
+  },
+
+  thorns: {
+    name: '荆棘护甲',
+    description: '反伤提升',
+    base: { thorns: 3 },
+    perLevel: { thorns: 2 },
+  },
+};
+
+/** @type {string[]} All buff type IDs */
+export const BUFF_IDS = ['atk_boost', 'crit_boost', 'hp_boost', 'gold_boost', 'lifesteal', 'thorns'];
