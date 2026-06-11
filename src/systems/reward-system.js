@@ -19,7 +19,8 @@
 
 import { STATE } from '../core/game-state.js';
 import { rng } from '../core/random.js';
-import { EQUIPMENT, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_KEYS } from '../data/equipment-data.js';
+import { EQUIPMENT } from '../data/equipment-data.js';
+const EQUIPMENT_SLOT_KEYS = ['weapon', 'armor', 'accessory'];
 import { SKILLS } from '../data/skill-data.js';
 import { FOLLOWERS, FOLLOWER_IDS } from '../data/follower-data.js';
 import { BUFFS, BUFF_IDS } from '../data/buff-data.js';
@@ -311,10 +312,7 @@ function _generateEquipment(bossTier, timestamp, index) {
   /** @type {Array<{typeId: string, slot: string}>} */
   const pool = [];
   for (const slot of EQUIPMENT_SLOT_KEYS) {
-    const ids = (EQUIPMENT_SLOTS[slot] || []).slice(0, maxIndex);
-    for (const typeId of ids) {
-      pool.push({ typeId, slot });
-    }
+    pool.push({ typeId: slot, slot });
   }
 
   if (pool.length === 0) return null;
