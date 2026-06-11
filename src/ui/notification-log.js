@@ -100,9 +100,8 @@ export function addNotification(text, type = 'combat') {
 
     // Enforce max-visible cap — remove oldest if exceeded
     const children = container.querySelectorAll('.notification-entry');
-    while (children.length > MAX_VISIBLE) {
-        const oldest = children[0];
-        _removeEntry(oldest);
+    for (let i = 0; i < children.length - MAX_VISIBLE; i++) {
+        _removeEntry(children[i]);
     }
 }
 
