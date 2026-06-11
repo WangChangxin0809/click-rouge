@@ -31,7 +31,8 @@ import { ENEMY_TYPES } from './data/enemy-definitions.js';
 import { BOSS_TYPES } from './data/boss-definitions.js';
 import { initMainMenu, showMainMenu } from './ui/main-menu.js';
 import { initLevelSelect, showLevelSelect } from './ui/level-select.js';
-import { loadMeta, getPermanentGold } from './systems/meta-progression.js';
+import { initShopPanel, showShopPanel } from './ui/shop-panel.js';
+import { loadMeta } from './systems/meta-progression.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -130,6 +131,10 @@ const gameLoop = new GameLoop(update, render);
  * @param {string} name — screen element ID (e.g. 'main-menu', 'level-select')
  */
 function showScreen(name) {
+    // Skip if already showing this screen
+    const current = document.querySelector('.screen.active');
+    if (current && current.id === name) return;
+
     // Hide all screens
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 
@@ -140,7 +145,7 @@ function showScreen(name) {
     // Delegate content refresh to the appropriate show function
     if (name === 'main-menu') showMainMenu();
     if (name === 'level-select') showLevelSelect();
-    if (name === 'shop-panel') { /* TODO: shop UI */ }
+    if (name === 'shop-panel') showShopPanel();
     if (name === 'loadout-panel') { /* TODO: loadout UI */ }
     if (name === 'settlement-panel') { /* TODO: settlement UI */ }
 }
@@ -463,13 +468,13 @@ loadMeta();
 // Initialise navigation UI
 initMainMenu();
 initLevelSelect();
+initShopPanel();
 
 // Hide the old start screen (preserved for backwards compat during transition)
 startScreen.classList.add('hidden');
 gameoverScreen.classList.add('hidden');
 
 // Show the main menu as the first screen
-showMainMenu();
 showScreen('main-menu');
 
 // Render initial idle frame (canvas stays in background)
