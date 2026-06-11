@@ -100,9 +100,14 @@ export function stopBGM() {
 export function handleFirstInteraction() {
     if (_firstInteraction) return;
     _firstInteraction = true;
+    if (!_pending) return;
+    // _current was set during deferral — reset so the retry actually plays
+    _current = null;
     if (_pending === 'menu') {
+        _pending = null;
         startMenuBGM();
     } else if (_pending === 'battle') {
+        _pending = null;
         startBattleBGM();
     }
 }
