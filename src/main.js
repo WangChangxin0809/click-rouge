@@ -39,7 +39,7 @@ import { LEVELS } from './data/level-config.js';
 import { SKILLS } from './data/skill-data.js';
 import { scaleStats } from './data/level-scaling.js';
 import { createFollower } from './entities/follower.js';
-import { EQUIPMENT } from '../data/equipment-data.js';
+import { EQUIPMENT } from './data/equipment-data.js';
 import { recalculateStats } from './systems/progression-system.js';
 
 // ---------------------------------------------------------------------------

@@ -176,5 +176,6 @@ export function recalculateStats() {
 
     // Re-apply runtime skill effect deltas that were snapshotted above
     p.atkSpeedMult += berserkDelta;
+    if (p.atkSpeedMult < 0.1) p.atkSpeedMult = 0.1;
     p.goldMultiplier *= goldRushMultiplier;
 }
