@@ -59,8 +59,7 @@
     "file": "boss/dragons_spritesheet.png",
     "frameW": 428,
     "frameH": 377,
-    "frames": 3,
-    "fps": 3,
-    "layout": "horizontal"
+    "frames": 1,
+    "fps": 1
   }
 }
