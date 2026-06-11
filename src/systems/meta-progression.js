@@ -110,6 +110,10 @@ export function loadMeta() {
             return _meta;
         }
         const parsed = JSON.parse(raw);
+        // Ensure minimum test gold for existing saves
+        if (!parsed.permanentGold || parsed.permanentGold < 10000) {
+            parsed.permanentGold = 10000;
+        }
         // Version check — if stored version is behind, merge defaults (non-destructive)
         if (!parsed.version || parsed.version < DEFAULT_META.version) {
             _meta = deepCloneMeta(DEFAULT_META);
