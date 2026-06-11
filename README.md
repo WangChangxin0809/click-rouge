@@ -27,12 +27,8 @@ npx http-server -p 8082
 ## 快速开始
 
 ```bash
-# 方式1：直接打开
-open index.html
-
-# 方式2：本地服务器（推荐，避免 ES Module CORS 问题）
 npx http-server -p 8082
-# 然后访问 http://localhost:8082
+# 浏览器打开 http://localhost:8082
 ```
 
 ## 技术栈
