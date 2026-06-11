@@ -18,7 +18,7 @@ import { initEconomySystem, updateEconomySystem } from './systems/economy-system
 import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstFreeze, burstHeal, burstPoison, triggerScreenFlash, updateScreenFlash } from './rendering/fx-renderer.js';
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
-import { initBGM, startBGM, stopBGM, resumeBGM } from './audio/bgm.js';
+import { startMenuBGM, startBattleBGM, stopBGM, resumeBGM } from './audio/bgm.js';
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
 import { generateRewards, generateMiniRewards, applyReward } from './systems/reward-system.js';
 import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
@@ -159,6 +159,11 @@ function showScreen(name) {
     // Show the target screen
     const el = document.getElementById(name);
     if (el) el.classList.add('active');
+
+    // Switch to menu BGM when showing non-combat screens
+    if (name !== 'loadout-panel' || (STATE._loadoutMode === 'config')) {
+        startMenuBGM();
+    }
 
     // Delegate content refresh to the appropriate show function
     if (name === 'main-menu') showMainMenu();
@@ -343,7 +348,7 @@ function startGame(config = {}) {
             };
         }
     }
-    initSpawnSystem(); initEconomySystem(); initSkillSystem(); clearProjectiles(); initAudio(); initBGM(); startBGM();
+    initSpawnSystem(); initEconomySystem(); initSkillSystem(); clearProjectiles(); initAudio(); startBattleBGM();
     recalculateStats();
     document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
     startScreen.classList.add('hidden'); gameoverScreen.classList.add('hidden');
@@ -364,7 +369,7 @@ function endGame() {
 function togglePause() {
     if (STATE.gameStatus === 'paused') {
         STATE.gameStatus = 'playing';
-        startBGM();
+        startBattleBGM();
         pauseOverlay.classList.add('hidden');
         gameLoop.start();
     } else if (STATE.gameStatus === 'playing') {
