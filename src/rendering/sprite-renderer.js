@@ -51,7 +51,7 @@ const SPRITE_DEFS = {
     // Boss sprites
     giant_slime:   { key: 'giant_slime',   frameW: 74,  frameH: 86,  frames: 4, fps: 4, layout: 'horizontal', scale: 2.5 },
     skeleton_king: { key: 'skeleton_king', frameW: 138, frameH: 138, frames: 4, fps: 4, layout: 'horizontal' },
-    fire_dragon:   { key: 'fire_dragon',   frameW: 107, frameH: 377, frames: 4, fps: 4, layout: 'horizontal' },
+    fire_dragon:   { key: 'fire_dragon',   frameW: 428, frameH: 377, frames: 1, fps: 1 },
 };
 
 // ---------------------------------------------------------------------------

@@ -6,5 +6,5 @@
   "fire_skull":{ "file": "fireskull/mon2_sprite_base.png",    "frameW": 128, "frameH": 128, "frames": 1, "fps": 1 },
   "giant_slime": { "file": "slime/plat_slime_spritesheet.png", "frameW": 74, "frameH": 86, "frames": 4, "fps": 4, "layout": "horizontal", "scale": 2.5 },
   "skeleton_king": { "file": "boss/skeleton_king_spritesheet.png", "frameW": 138, "frameH": 138, "frames": 4, "fps": 4, "layout": "horizontal" },
-  "fire_dragon": { "file": "boss/dragons_spritesheet.png", "frameW": 107, "frameH": 377, "frames": 4, "fps": 4, "layout": "horizontal" }
+  "fire_dragon": { "file": "boss/dragons_spritesheet.png", "frameW": 428, "frameH": 377, "frames": 1, "fps": 1 }
 }
