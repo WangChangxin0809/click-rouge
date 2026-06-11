@@ -25,6 +25,7 @@ import { updateEquipmentPanel } from './ui/equipment-panel.js';
 import { initSkillSystem, updateSkillSystem, activateSkill } from './systems/skill-system.js';
 import { updateAllFollowers } from './entities/follower.js';
 import { updateProjectiles, clearProjectiles } from './entities/projectile.js';
+import { addNotification, updateNotificationLog } from './ui/notification-log.js';
 
 // ---------------------------------------------------------------------------
 // DOM element references
@@ -98,6 +99,7 @@ function update(dt) {
     updateParticles(dt);
     updateShake(dt);
     updateScreenFlash(dt);
+    updateNotificationLog(dt);
 }
 
 /**
@@ -312,10 +314,17 @@ events.on('player:damaged', (_payload) => {
     triggerShake(6, 0.15);
 });
 
+// Notification log events
+events.on('game:started', () => addNotification('游戏开始', 'system'));
+events.on('wave:start', (p) => addNotification(`第 ${p.wave} 波`, 'system'));
+events.on('enemy:spawned', (e) => { if (e.isBoss) addNotification(`${e.name || 'Boss'} 出现了！`, 'boss'); });
+events.on('boss:died', (boss) => addNotification(`${boss.name || 'Boss'} 被击败！`, 'reward'));
+events.on('skill:activated', (p) => addNotification(`${p.name}！`, 'skill'));
+
 // Skill VFX — thunder strike: lightning burst + yellow flash
 events.on('skill:thunder', (_payload) => {
     // Burst from the centre of the design-resolution screen
-    burstThunder(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+    burstThunder(960, 540);
     triggerScreenFlash('#ffff00', 0.25, 0.15);
 });
 
@@ -327,7 +336,7 @@ events.on('boss:spawned', (_payload) => {
 
 // Player healed — green rising particles + soft green flash
 events.on('player:healed', (_payload) => {
-    burstHeal(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+    burstHeal(960, 540);
     triggerScreenFlash('#44ff88', 0.15, 0.3);
 });
 
