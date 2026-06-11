@@ -57,8 +57,8 @@
   },
   "fire_dragon": {
     "file": "boss/dragons_spritesheet.png",
-    "frameW": 177,
-    "frameH": 175,
+    "frameW": 176,
+    "frameH": 107,
     "frames": 1,
     "fps": 1
   }
