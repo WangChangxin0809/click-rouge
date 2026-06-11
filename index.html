@@ -749,6 +749,24 @@
             display: none !important;
         }
 
+        /* Screen containers (main-menu, level-select, shop, loadout, settlement) */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: auto;
+        }
+
         /* === Responsive === */
         /* Reduced motion: disable cooldown transition animation */
         @media (prefers-reduced-motion: reduce) {
@@ -893,6 +911,21 @@
             <div class="equipment-panel-title">装备</div>
         </div>
     </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen hidden"></div>
+
+    <!-- Level Select -->
+    <div id="level-select" class="screen hidden"></div>
+
+    <!-- Shop Panel -->
+    <div id="shop-panel" class="screen hidden"></div>
+
+    <!-- Loadout Panel -->
+    <div id="loadout-panel" class="screen hidden"></div>
+
+    <!-- Settlement Panel -->
+    <div id="settlement-panel" class="screen hidden"></div>
 
     <!-- Modal overlay -->
     <div id="modal-overlay">

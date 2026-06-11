@@ -11,6 +11,8 @@
  *   if (STATE.player.hp <= 0) { ... }
  */
 
+import { applyMetaToPlayer } from '../systems/meta-progression.js';
+
 /**
  * @typedef {Object} PlayerState
  * @property {number} hp
@@ -125,6 +127,9 @@ function reset() {
     _state.player = Object.assign(_state.player, fresh.player);
     _state.enemies = [];
     _state.particles = [];
+
+    // Apply permanent meta-progression bonuses
+    applyMetaToPlayer(_state.player);
 }
 
 // Freeze INITIAL_STATE so no code accidentally mutates the template
