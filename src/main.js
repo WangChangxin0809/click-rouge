@@ -18,7 +18,7 @@ import { initEconomySystem, updateEconomySystem } from './systems/economy-system
 import { updateParticles, burstHit, burstDeath, burstCrit, burstThunder, burstFreeze, burstHeal, burstPoison, triggerScreenFlash, updateScreenFlash, triggerLightningStrike, triggerBerserkVignette, burstGoldRain, updateSkillVFX } from './rendering/fx-renderer.js';
 import { updateShake, triggerShake } from './rendering/screen-shake.js';
 import { initAudio, playHit, playCrit, playDeath } from './audio/audio-manager.js';
-import { startMenuBGM, startBattleBGM, stopBGM, resumeBGM } from './audio/bgm.js';
+import { startMenuBGM, startBattleBGM, stopBGM, handleFirstInteraction } from './audio/bgm.js';
 import { showDamageNumber, showGoldNumber, showMissText } from './ui/damage-numbers.js';
 import { generateRewards, generateMiniRewards, applyReward } from './systems/reward-system.js';
 import { showRewardPanel, hideRewardPanel } from './ui/reward-panel.js';
@@ -218,7 +218,7 @@ function updateHudDom() {
  * @param {MouseEvent} e
  */
 function handleCanvasClick(e) {
-    resumeBGM();
+    handleFirstInteraction();
     if (STATE.gameStatus !== 'playing') return;
 
     const rect = canvas.getBoundingClientRect();
@@ -273,6 +273,9 @@ function handleKeyDown(e) {
 
 canvas.addEventListener('click', handleCanvasClick);
 window.addEventListener('keydown', handleKeyDown);
+// Unlock audio on first user interaction anywhere
+document.addEventListener('click', handleFirstInteraction, { once: true });
+document.addEventListener('keydown', handleFirstInteraction, { once: true });
 
 // ---------------------------------------------------------------------------
 // Game flow — start / end
