@@ -27,7 +27,7 @@
  *   renderer.render(STATE);
  */
 
-import { renderEnemies } from './enemy-renderer.js';
+import { renderEnemies } from './sprite-renderer.js';
 import { renderParticles, getScreenFlash } from './fx-renderer.js';
 import { renderFollowers } from './follower-renderer.js';
 import { renderProjectiles } from '../entities/projectile.js';
