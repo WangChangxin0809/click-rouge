@@ -20,6 +20,8 @@
  *   applyMetaToPlayer(STATE.player);
  */
 
+import { EQUIPMENT } from '../data/equipment-data.js';
+
 // ---------------------------------------------------------------------------
 // Internal state
 // ---------------------------------------------------------------------------
@@ -335,6 +337,7 @@ export function completeLevel(levelId) {
     }
     // Track best for this level
     if (!_meta.levelBests) _meta.levelBests = {};
+    saveMeta();
 }
 
 // ---------------------------------------------------------------------------
@@ -458,46 +461,7 @@ export function updateOwnedItemLevel(type, typeId, newLevel) {
  * @returns {string} The display name for this level (e.g. '铁剑' for weapon Lv.5).
  */
 export function getEquipName(slot, level) {
-    // Use a lazy import-like pattern: read the EQUIPMENT registry at call time.
-    // This avoids a circular import (meta-progression.js ← equipment-data.js
-    // would only be a problem if equipment-data.js imported us, which it doesn't).
-    //
-    // We use a dynamic import guard — but since this is ES modules and we need
-    // the data synchronously, we import at module top.  The caller guarantees
-    // equipment-data.js is loaded before this function is called.
-    //
-    // For robustness, provide a fallback if the registry is unavailable.
-    let EQUIPMENT;
-    try {
-        // Lazy require pattern via module-level import (handled below)
-    } catch (_e) { /* fall through */ }
-
-    // Static name maps as fallback (keeps this module self-contained if
-    // equipment-data.js hasn't been loaded yet).
-    const FALLBACK_NAMES = {
-        weapon: [
-            { minLevel: 1,  name: '短剑' },
-            { minLevel: 5,  name: '铁剑' },
-            { minLevel: 10, name: '附魔利刃' },
-            { minLevel: 15, name: '传说之刃' },
-        ],
-        armor: [
-            { minLevel: 1,  name: '皮背心' },
-            { minLevel: 5,  name: '锁子甲' },
-            { minLevel: 10, name: '板甲' },
-            { minLevel: 15, name: '龙鳞甲' },
-        ],
-        accessory: [
-            { minLevel: 1,  name: '铜戒指' },
-            { minLevel: 5,  name: '银护符' },
-            { minLevel: 10, name: '红宝石坠饰' },
-            { minLevel: 15, name: '凤凰之羽' },
-        ],
-    };
-
-    const names = (EQUIPMENT && EQUIPMENT[slot] && EQUIPMENT[slot].names)
-        || FALLBACK_NAMES[slot]
-        || [];
+    const names = (EQUIPMENT && EQUIPMENT[slot] && EQUIPMENT[slot].names) || [];
 
     let bestName = names[0] ? names[0].name : '未知装备';
     for (const tier of names) {
