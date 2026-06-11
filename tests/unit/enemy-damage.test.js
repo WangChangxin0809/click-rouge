@@ -3,43 +3,11 @@
  *
  * Story type: Logic
  * Gate level: BLOCKING
- * Output: tests/unit/combat-system.test.js
+ * Output: tests/unit/enemy-damage.test.js
  */
 
 import { damageEnemy } from '../../src/entities/enemy.js';
-
-let passed = 0;
-let failed = 0;
-
-function assert(cond, msg) {
-    if (!cond) {
-        console.error('  FAIL: ' + msg);
-        failed++;
-        throw new Error('FAIL: ' + msg);
-    }
-    console.log('  PASS: ' + msg);
-    passed++;
-}
-
-function report() {
-    const total = passed + failed;
-    const el = document.getElementById('results');
-    if (el) {
-        const div = document.createElement('div');
-        div.className = failed === 0 ? 'pass' : 'fail';
-        div.textContent = '[PASS] combat-system: ' + passed + '/' + total + ' tests passed';
-        if (failed > 0) {
-            div.className = 'fail';
-            div.textContent = '[FAIL] combat-system: ' + passed + '/' + total + ' tests passed';
-        }
-        el.appendChild(div);
-    }
-    if (failed === 0) {
-        console.log('✓ combat-system tests pass (' + passed + '/' + total + ')');
-    } else {
-        console.error('✗ combat-system tests FAILED (' + failed + '/' + total + ')');
-    }
-}
+import { assert, report } from '../test-helpers.js';
 
 try {
     // -------------------------------------------------------------------------
@@ -118,4 +86,4 @@ try {
     // Individual test failures already logged by assert()
 }
 
-report();
+report('enemy-damage');

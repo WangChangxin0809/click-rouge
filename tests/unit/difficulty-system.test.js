@@ -16,35 +16,7 @@
 
 import { STATE } from '../../src/core/game-state.js';
 import { getDifficulty, updateDifficulty } from '../../src/systems/difficulty-system.js';
-
-let passed = 0;
-let failed = 0;
-
-function assert(cond, msg) {
-    if (!cond) {
-        console.error('  FAIL: ' + msg);
-        failed++;
-        throw new Error('FAIL: ' + msg);
-    }
-    console.log('  PASS: ' + msg);
-    passed++;
-}
-
-function report() {
-    const total = passed + failed;
-    const el = document.getElementById('results');
-    if (el) {
-        const div = document.createElement('div');
-        div.className = failed === 0 ? 'pass' : 'fail';
-        div.textContent = `[${failed === 0 ? 'PASS' : 'FAIL'}] difficulty-system: ${passed}/${total} tests passed`;
-        el.appendChild(div);
-    }
-    if (failed === 0) {
-        console.log('✓ difficulty-system tests pass (' + passed + '/' + total + ')');
-    } else {
-        console.error('✗ difficulty-system tests FAILED (' + passed + '/' + total + ')');
-    }
-}
+import { assert, report } from '../test-helpers.js';
 
 /**
  * Helper: set elapsed time and update difficulty, then check scale.
@@ -185,8 +157,8 @@ try {
             updateDifficulty(0.016);
             updateDifficulty(-1);
             updateDifficulty(NaN);
-            // NaN time is handled by _computeScale returning NaN,
-            // scale will be NaN but shouldn't throw
+            // NaN <= X is always false, so all piecewise conditions fail
+            // and scale falls through to the default cap value (5.0)
         } catch (e) {
             threw = true;
         }
@@ -197,4 +169,4 @@ try {
     // Already logged by assert()
 }
 
-report();
+report('difficulty-system');

@@ -8,7 +8,7 @@
  *
  * Story type: Logic / Integration
  * Gate level: BLOCKING
- * Output: tests/unit/spawn-system.test.js
+ * Output: tests/unit/enemy-creation.test.js
  */
 
 import { createEnemy } from '../../src/entities/enemy.js';
@@ -16,35 +16,7 @@ import { ENEMY_TYPES } from '../../src/data/enemy-definitions.js';
 import { DESIGN_WIDTH, DESIGN_HEIGHT } from '../../src/core/constants.js';
 import { getDifficulty, updateDifficulty } from '../../src/systems/difficulty-system.js';
 import { STATE } from '../../src/core/game-state.js';
-
-let passed = 0;
-let failed = 0;
-
-function assert(cond, msg) {
-    if (!cond) {
-        console.error('  FAIL: ' + msg);
-        failed++;
-        throw new Error('FAIL: ' + msg);
-    }
-    console.log('  PASS: ' + msg);
-    passed++;
-}
-
-function report() {
-    const total = passed + failed;
-    const el = document.getElementById('results');
-    if (el) {
-        const div = document.createElement('div');
-        div.className = failed === 0 ? 'pass' : 'fail';
-        div.textContent = `[${failed === 0 ? 'PASS' : 'FAIL'}] spawn-system: ${passed}/${total} tests passed`;
-        el.appendChild(div);
-    }
-    if (failed === 0) {
-        console.log('✓ spawn-system tests pass (' + passed + '/' + total + ')');
-    } else {
-        console.error('✗ spawn-system tests FAILED (' + failed + '/' + total + ')');
-    }
-}
+import { assert, report } from '../test-helpers.js';
 
 try {
     // -------------------------------------------------------------------------
@@ -247,4 +219,4 @@ try {
     // Already logged by assert()
 }
 
-report();
+report('enemy-creation');
