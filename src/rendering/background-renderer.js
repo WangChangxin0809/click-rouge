@@ -29,6 +29,9 @@ let _stars = null;
 
 const STAR_COUNT = 90;
 
+/** Previous elapsedTime value for computing per-frame dt */
+let _prevElapsed = 0;
+
 function _ensureStars() {
     if (_stars) return;
     _stars = [];
@@ -107,13 +110,18 @@ function _drawGradient(ctx) {
 function _drawStars(ctx, elapsedTime) {
     _ensureStars();
 
+    // Compute dt from elapsedTime delta (safe against first-frame / tab-away)
+    let dt = elapsedTime - _prevElapsed;
+    _prevElapsed = elapsedTime;
+    if (dt <= 0 || dt > 0.1) dt = 0.016; // fallback to ~60fps for first frame or large gaps
+
     ctx.save();
 
     for (let i = 0; i < STAR_COUNT; i++) {
         const s = _stars[i];
 
         // Move star horizontally for parallax depth, wrap around
-        s.x -= s.speed * 0.016; // approx per-frame at 60fps
+        s.x -= s.speed * dt;
         if (s.x < -10) {
             s.x = DESIGN_WIDTH + 10;
             s.y = Math.random() * DESIGN_HEIGHT;

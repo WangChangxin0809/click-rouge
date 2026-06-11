@@ -126,13 +126,6 @@ function _renderEnemy(ctx, e, now) {
         ctx.scale(1 + jitter, 1 + jitter);
     }
 
-    // ---- Outer glow (shadowBlur) ----
-    if (!isFlashing) {
-        const baseColor = e.color || DEFAULT_COLORS[e.typeId] || '#ff4444';
-        ctx.shadowColor = _lightenColor(baseColor, 0.6);
-        ctx.shadowBlur = r * 0.65;
-    }
-
     // ---- Body (type-specific) ----
     switch (e.typeId) {
         case 'slime':      _drawSlime(ctx, e, r, now, isFlashing); break;
@@ -142,10 +135,6 @@ function _renderEnemy(ctx, e, now) {
         case 'fire_skull': _drawFireSkull(ctx, e, r, now, isFlashing); break;
         default:           _drawDefault(ctx, e, r, isFlashing); break;
     }
-
-    // Reset shadow so it doesn't affect eyes / health bar
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
 
     // ---- Eyes (cartoon style, skipped for ghost which has its own) ----
     if (e.typeId !== 'ghost') {

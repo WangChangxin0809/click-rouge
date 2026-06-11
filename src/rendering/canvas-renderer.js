@@ -322,6 +322,9 @@ export class CanvasRenderer {
 
         ctx.restore(); // shake
 
+        // --- Boss HP bar (after entities, before screen flash) ---
+        renderBossHpBar(ctx, state.enemies, state.elapsedTime);
+
         // --- Screen flash overlay ---
         // Drawn after all entities so it tints the entire scene.
         const flash = getScreenFlash();
