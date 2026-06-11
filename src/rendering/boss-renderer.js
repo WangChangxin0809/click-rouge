@@ -1,20 +1,18 @@
 /**
  * BossRenderer — Dramatic visual effects for boss enemies in Click Rouge.
  *
- * Each boss gets:
- *   - A larger, gradient-filled body with radial glow (shadowBlur)
- *   - A rotating halo ring around the body
+ * Boss body rendering is handled by sprite-renderer.js using pre-loaded sprites.
+ * This module only provides decorative effects:
+ *   - A rotating halo ring around the boss
  *   - A particle trail that follows the boss's movement
- *   - Entrance animation: flash + fly-in from off-screen
+ *   - Entrance animation: fly-in from off-screen (position/scale/alpha stored on
+ *     the boss object for sprite-renderer to apply when drawing the body)
  *   - Hit-shake: body jitter when damaged
  *   - A wide, centered HP bar at the top of the screen
  *
- * Performance note: shadowBlur is GPU-intensive. We apply it only to the
- * boss body (at most one boss on screen), never to regular enemies.
- *
- * Usage (from enemy-renderer.js):
+ * Usage (from sprite-renderer.js):
  *   import { renderBosses, renderBossHpBar } from './boss-renderer.js';
- *   renderBosses(ctx, bosses, elapsedTime);
+ *   renderBosses(ctx, bosses, elapsedTime);  // sets _renderX etc. on each boss
  *   renderBossHpBar(ctx, enemies, elapsedTime);
  */
 
@@ -224,78 +222,14 @@ function _renderBoss(ctx, boss, now) {
     // ---- Rotating halo (behind body) ----
     _drawBossHalo(ctx, renderX, renderY, r * 1.25, now);
 
-    // ---- Body with glow ----
-    ctx.save();
-    ctx.translate(renderX, renderY);
-    ctx.scale(scale, scale);
+    // ---- Store entrance state on boss for sprite-renderer body drawing ----
+    // sprite-renderer.js reads these properties to position/scale/alpha the boss sprite
+    boss._renderX = renderX;
+    boss._renderY = renderY;
+    boss._renderScale = scale;
+    boss._renderAlpha = entranceAlpha;
+    boss._entranceFlash = entranceFlash;
 
-    // Glow effect (shadowBlur — GPU intensive, only for the boss)
-    ctx.shadowColor = boss.color || '#ff4444';
-    ctx.shadowBlur = entranceElapsed < 0.5 ? 20 + (1 - entranceElapsed / 0.5) * 30 : 20;
-
-    // Body gradient
-    const bodyGrad = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
-    const col = boss.color || '#ff4444';
-    if (entranceFlash > 0) {
-        bodyGrad.addColorStop(0, '#ffffff');
-        bodyGrad.addColorStop(0.4, _interpolateColor('#ffffff', col, 1 - entranceFlash * 0.5));
-        bodyGrad.addColorStop(1, col);
-    } else {
-        bodyGrad.addColorStop(0, _lightenColor(col, 0.45));
-        bodyGrad.addColorStop(0.3, _lightenColor(col, 0.2));
-        bodyGrad.addColorStop(0.7, col);
-        bodyGrad.addColorStop(1, _darkenColor(col, 0.4));
-    }
-
-    ctx.fillStyle = bodyGrad;
-    ctx.beginPath();
-
-    // Body shape varies by type — same style as regular enemies but larger
-    switch (boss.typeId) {
-        case 'giant_slime':
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            break;
-        case 'skeleton_king':
-            // Angular skull-like shape
-            _drawAngularBody(ctx, r, 6);
-            break;
-        case 'fire_dragon':
-            // Wider, more intimidating shape
-            _drawAngularBody(ctx, r * 0.9, 8);
-            break;
-        default:
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            break;
-    }
-    ctx.fill();
-
-    // Rim stroke
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = entranceFlash > 0 ? '#ffffff' : _lightenColor(col, 0.3);
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Eyes (large, menacing)
-    const eyeR = r * 0.15;
-    ctx.fillStyle = entranceFlash > 0 ? '#ffffff' : '#ffcc00';
-    ctx.beginPath();
-    ctx.arc(-r * 0.35, -r * 0.15, eyeR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(r * 0.35, -r * 0.15, eyeR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Pupils
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(-r * 0.35, -r * 0.15, eyeR * 0.55, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(r * 0.35, -r * 0.15, eyeR * 0.55, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore(); // body translate+scale
     ctx.restore(); // outer save
 }
 
