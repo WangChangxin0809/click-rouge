@@ -54,11 +54,22 @@ function _injectStyles() {
     const style = document.createElement('style');
     style.id = 'loadout-panel-styles';
     style.textContent = `
+        .loadout-panel-wrap {
+            display: flex; flex-direction: column;
+            width: 100%; max-width: 900px;
+            max-height: 85vh;
+            background: rgba(18, 18, 36, 0.94);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.55);
+        }
         .loadout-top-bar {
             display: flex; align-items: center; justify-content: space-between;
             padding: 14px 20px; background: rgba(0, 0, 0, 0.3);
             border-bottom: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0;
-            width: 100%; max-width: 900px;
         }
         .loadout-back-btn {
             font-size: 14px; font-family: inherit; color: #b0b0c0;
@@ -203,6 +214,9 @@ function _hideLoadoutPanel() {
 function _buildPanel() {
     _panelEl.innerHTML = '';
 
+    const wrap = document.createElement('div');
+    wrap.className = 'loadout-panel-wrap';
+
     // -- Top bar -----------------------------------------------------------
     const topBar = document.createElement('div');
     topBar.className = 'loadout-top-bar';
@@ -228,7 +242,7 @@ function _buildPanel() {
     topBar.appendChild(title);
     topBar.appendChild(startBtn);
 
-    _panelEl.appendChild(topBar);
+    wrap.appendChild(topBar);
 
     // -- Content wrapper ---------------------------------------------------
     const content = document.createElement('div');
@@ -243,7 +257,8 @@ function _buildPanel() {
     // -- Equipment section -------------------------------------------------
     content.appendChild(_buildEquipmentSection());
 
-    _panelEl.appendChild(content);
+    wrap.appendChild(content);
+    _panelEl.appendChild(wrap);
 }
 
 // ---------------------------------------------------------------------------
