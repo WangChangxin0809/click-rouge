@@ -3,14 +3,14 @@
  *
  * Replaces the procedural enemy-renderer with sprite-sheet-based rendering.
  * Regular enemies are drawn using pre-loaded PNG sprite images with frame
- * animation. Boss entities are still delegated to boss-renderer.js for their
- * complex visual effects (halo, trail, entrance animation).
+ * animation. Boss entities also use sprite rendering for their body but
+ * delegate visual effects (halo, trail, entrance animation) to boss-renderer.js.
  *
  * Preserved effects from the original enemy-renderer:
  *   - Hit flash (white tint via globalCompositeOperation "source-atop")
  *   - Float animation (sin-wave vertical offset)
  *   - Health bar below the sprite
- *   - Eyes rendering (for sprites without built-in eyes)
+ *   - Boss entrance flash overlay
  *
  * Drop-in replacement: the exported renderEnemies() has the same signature
  * as the original enemy-renderer.js function.
@@ -43,11 +43,15 @@ import { renderBosses } from './boss-renderer.js';
 
 /** @type {Object<string, SpriteDef>} */
 const SPRITE_DEFS = {
-    slime:      { key: 'slime',      frameW: 74,  frameH: 86,  frames: 4, fps: 4, layout: 'horizontal' },
-    bat:        { key: 'bat',        frameW: 95,  frameH: 138, frames: 4, fps: 6, layout: 'horizontal' },
-    ghost:      { key: 'ghost',      frameW: 75,  frameH: 138, frames: 2, fps: 3, layout: 'horizontal' },
-    golem:      { key: 'golem',      frameW: 32,  frameH: 32,  frames: 1, fps: 1 },
-    fire_skull: { key: 'fire_skull', frameW: 128, frameH: 128, frames: 1, fps: 1 },
+    slime:         { key: 'slime',         frameW: 74,  frameH: 86,  frames: 4, fps: 4, layout: 'horizontal' },
+    bat:           { key: 'bat',           frameW: 95,  frameH: 138, frames: 4, fps: 6, layout: 'horizontal' },
+    ghost:         { key: 'ghost',         frameW: 75,  frameH: 138, frames: 2, fps: 3, layout: 'horizontal' },
+    golem:         { key: 'golem',         frameW: 32,  frameH: 32,  frames: 1, fps: 1 },
+    fire_skull:    { key: 'fire_skull',    frameW: 128, frameH: 128, frames: 1, fps: 1 },
+    // Boss sprites
+    giant_slime:   { key: 'giant_slime',   frameW: 74,  frameH: 86,  frames: 4, fps: 4, layout: 'horizontal', scale: 2.5 },
+    skeleton_king: { key: 'skeleton_king', frameW: 138, frameH: 138, frames: 4, fps: 4, layout: 'horizontal' },
+    fire_dragon:   { key: 'fire_dragon',   frameW: 107, frameH: 377, frames: 4, fps: 4, layout: 'horizontal' },
 };
 
 // ---------------------------------------------------------------------------
@@ -125,9 +129,17 @@ export function renderEnemies(ctx, enemies) {
         _renderSpriteEnemy(ctx, regulars[i], now);
     }
 
-    // ---- Bosses (delegated to boss-renderer) ----
+    // ---- Bosses (body via sprite-renderer, effects via boss-renderer) ----
     if (bosses.length > 0) {
+        // boss-renderer computes entrance animation state and draws halo/trail,
+        // then stores _renderX/_renderY/_renderScale/_renderAlpha/_entranceFlash
+        // on each boss object for _renderSpriteEnemy to use.
         renderBosses(ctx, bosses, now);
+
+        // Draw boss bodies with sprites (using entrance-adjusted positions)
+        for (let i = 0, len = bosses.length; i < len; i++) {
+            _renderSpriteEnemy(ctx, bosses[i], now);
+        }
     }
 }
 
@@ -171,11 +183,20 @@ function _renderSpriteEnemy(ctx, e, now) {
     const phase = (e.id * 0.7) % (Math.PI * 2);
     const floatY = Math.sin(now * FLOAT_SPEED + phase) * FLOAT_AMPLITUDE;
 
+    // Boss entrance animation: adjusted position / scale / alpha (set by boss-renderer)
+    const renderX = (e._renderX != null) ? e._renderX : e.x;
+    const renderY = (e._renderY != null) ? e._renderY : e.y;
+    const entranceScale = (e._renderScale != null) ? e._renderScale : 1;
+    const entranceAlpha = (e._renderAlpha != null) ? e._renderAlpha : 1;
+    const entranceFlash = e._entranceFlash || 0;
+
     // Compute draw dimensions: scale sprite so its height = 2 * radius
-    const targetH = r * 2;
+    // Apply manifest scale (e.g. giant_slime = 2.5x) and entrance animation scale
+    const manifestScale = spriteDef.scale || 1;
+    const targetH = r * 2 * manifestScale;
     const spriteScale = targetH / spriteDef.frameH;
-    const drawW = spriteDef.frameW * spriteScale;
-    const drawH = targetH;
+    const drawW = spriteDef.frameW * spriteScale * entranceScale;
+    const drawH = targetH * entranceScale;
 
     // Get current animation frame
     const animator = _getAnimator(spriteKey);
@@ -191,7 +212,13 @@ function _renderSpriteEnemy(ctx, e, now) {
     ctx.save();
 
     // Translate to enemy center (enables centered scale-punch and glow)
-    ctx.translate(e.x, e.y + floatY);
+    // Boss entrance animation uses adjusted renderX/renderY
+    ctx.translate(renderX, renderY + floatY);
+
+    // Boss entrance alpha (1.0 for regular enemies)
+    if (entranceAlpha < 1) {
+        ctx.globalAlpha = entranceAlpha;
+    }
 
     // Scale punch: quick shrink-then-bounce on hit
     if (isPunching) {
@@ -205,6 +232,12 @@ function _renderSpriteEnemy(ctx, e, now) {
         const flashProgress = (now - lastHit) / HIT_FLASH_DURATION;
         ctx.shadowColor = 'rgba(255, 30, 30, 0.5)';
         ctx.shadowBlur = 6 * (1 - flashProgress);
+    }
+
+    // Entrance white flash overlay (boss entrance animation, first 0.3s)
+    if (entranceFlash > 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${entranceFlash * 0.7})`;
+        ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
     }
 
     // Draw the sprite centered at origin
@@ -241,7 +274,7 @@ function _renderSpriteEnemy(ctx, e, now) {
     ctx.restore();
 
     // ---- Health bar (below sprite) ----
-    _drawSpriteHealthBar(ctx, e, r, drawW, e.y + floatY + drawH / 2);
+    _drawSpriteHealthBar(ctx, e, r, drawW, renderY + floatY + drawH / 2);
 }
 
 // ---------------------------------------------------------------------------
