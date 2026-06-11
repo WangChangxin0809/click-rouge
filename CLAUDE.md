@@ -32,6 +32,16 @@
 
 @.claude/docs/agent-delegation-rules.md
 
+## Handoff
+
+@HANDOFF.md — 项目交接文档，给新 AI 或开发者接手用的完整参考。
+
 ## Architecture Decisions Log
 
 - [No ADRs yet — use /architecture-decision to create one]
+
+## Known Issues Summary
+- 攻速(`atkSpeedMult`)、吸血(`lifesteal`)、反伤(`thorns`) 属性计算了但未被战斗系统消费
+- 精灵图裁剪后蝙蝠/龙为单帧（依赖程序化呼吸动画）
+- `assets/textures/` 目录为废文件，应清理
+- localStorage 中金币有 10000 最低值兜底（测试用，上线前改回 0）
