@@ -23,6 +23,7 @@
 import { STATE } from '../core/game-state.js';
 import { getSprite, hasSprite } from './sprite-loader.js';
 import { createAnimator } from './sprite-animator.js';
+import { lightenColor, darkenColor } from './enemy-renderer.js';
 import { renderBosses } from './boss-renderer.js';
 
 // ---------------------------------------------------------------------------
@@ -46,7 +47,7 @@ const SPRITE_DEFS = {
     bat:        { key: 'bat',        frameW: 95,  frameH: 138, frames: 4, fps: 6, layout: 'horizontal' },
     ghost:      { key: 'ghost',      frameW: 75,  frameH: 138, frames: 2, fps: 3, layout: 'horizontal' },
     golem:      { key: 'golem',      frameW: 32,  frameH: 32,  frames: 1, fps: 1 },
-    fire_skull: { key: 'fire_skull', frameW: 128, frameH: 128, frames: 4, fps: 6, layout: 'grid', gridCols: 2 },
+    fire_skull: { key: 'fire_skull', frameW: 128, frameH: 128, frames: 1, fps: 1 },
 };
 
 // ---------------------------------------------------------------------------
